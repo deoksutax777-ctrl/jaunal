@@ -1013,6 +1013,8 @@ function parseBankTransactions() {
         matchedSlipKey: null,
         counterpartAcct: '',
         counterpartDesc: '',
+        counterpartVendor: '',
+        counterpartVendorCode: '',
         originalRow: row,
       });
     }
@@ -1489,6 +1491,8 @@ function runMatching() {
       t.matchedSlipKey = null;
       t.counterpartAcct = '';
       t.counterpartDesc = '';
+      t.counterpartVendor = '';
+      t.counterpartVendorCode = '';
     });
     ba.matchedCount = 0;
     ba.unmatchedCount = ba.transactions.length;
@@ -1517,9 +1521,12 @@ function matchWithBotongyegeum(slipMap) {
       const counterparts = rows.filter(r => r !== bgRow);
       const counterpartSummary = counterparts.map(r => r.acctName).filter((v,i,a) => a.indexOf(v)===i).join(', ') || '(없음)';
       const counterpartDesc = bgRow.desc;
+      // Capture vendor info from counterpart rows
+      const counterpartVendor = counterparts.map(r => r.vendorName).filter(Boolean).filter((v,i,a) => a.indexOf(v)===i).join(', ') || bgRow.vendorName || '';
+      const counterpartVendorCode = counterparts.map(r => r.vendorCode).filter(Boolean).filter((v,i,a) => a.indexOf(v)===i).join(', ') || bgRow.vendorCode || '';
 
       if (!vendorSlips[vendor]) vendorSlips[vendor] = [];
-      vendorSlips[vendor].push({ slipKey: key, amount, isDeposit, counterpartSummary, counterpartDesc, rows: counterparts });
+      vendorSlips[vendor].push({ slipKey: key, amount, isDeposit, counterpartSummary, counterpartDesc, counterpartVendor, counterpartVendorCode, rows: counterparts });
     }
   }
 
@@ -1562,6 +1569,8 @@ function matchWithBotongyegeum(slipMap) {
         txn.matchedSlipKey = best.slipKey;
         txn.counterpartAcct = best.counterpartSummary;
         txn.counterpartDesc = best.counterpartDesc;
+        txn.counterpartVendor = best.counterpartVendor;
+        txn.counterpartVendorCode = best.counterpartVendorCode;
         usedSlips.add(best.slipKey);
       }
     }
@@ -1581,6 +1590,8 @@ function matchWithBotongyegeum(slipMap) {
           txn.matchedSlipKey = candidates[0].slipKey;
           txn.counterpartAcct = candidates[0].counterpartSummary;
           txn.counterpartDesc = candidates[0].counterpartDesc;
+          txn.counterpartVendor = candidates[0].counterpartVendor;
+          txn.counterpartVendorCode = candidates[0].counterpartVendorCode;
           usedSlips.add(candidates[0].slipKey);
           break;
         }
@@ -1617,11 +1628,12 @@ function matchWithoutBotongyegeum(slipMap) {
     const acctNames = rows.map(r => r.acctName).filter((v,i,a) => a.indexOf(v) === i).join(', ') || '(없음)';
     // Use first row's desc as representative
     const desc = rows[0]?.desc || '';
-    const vendorName = rows[0]?.vendorName || '';
+    const vendorName = rows.map(r => r.vendorName).filter(Boolean).filter((v,i,a) => a.indexOf(v)===i).join(', ') || '';
+    const vendorCode = rows.map(r => r.vendorCode).filter(Boolean).filter((v,i,a) => a.indexOf(v)===i).join(', ') || '';
 
     const k = date + '|' + amount + '|' + type;
     if (!slipIndex[k]) slipIndex[k] = [];
-    slipIndex[k].push({ slipKey: key, amount, type, counterpartSummary: acctNames, counterpartDesc: desc, vendorName });
+    slipIndex[k].push({ slipKey: key, amount, type, counterpartSummary: acctNames, counterpartDesc: desc, vendorName, vendorCode });
   }
 
   const usedSlips = new Set();
@@ -1650,6 +1662,8 @@ function matchWithoutBotongyegeum(slipMap) {
         txn.matchedSlipKey = best.slipKey;
         txn.counterpartAcct = best.counterpartSummary;
         txn.counterpartDesc = best.counterpartDesc;
+        txn.counterpartVendor = best.vendorName;
+        txn.counterpartVendorCode = best.vendorCode;
         usedSlips.add(best.slipKey);
       }
     }
@@ -1669,6 +1683,8 @@ function matchWithoutBotongyegeum(slipMap) {
           txn.matchedSlipKey = candidates[0].slipKey;
           txn.counterpartAcct = candidates[0].counterpartSummary;
           txn.counterpartDesc = candidates[0].counterpartDesc;
+          txn.counterpartVendor = candidates[0].vendorName;
+          txn.counterpartVendorCode = candidates[0].vendorCode;
           usedSlips.add(candidates[0].slipKey);
           break;
         }
@@ -1743,7 +1759,7 @@ function renderDetailTable() {
   const wrap = document.getElementById('detail-table-wrap');
   let html = `<table class="data-table"><thead><tr>
     <th>거래일</th><th>적요</th><th class="right">입금</th><th class="right">출금</th><th class="right">잔액</th>
-    <th>상대계정</th><th>적요2</th><th>매칭</th>
+    <th>상대계정</th><th>거래처코드</th><th>거래처명</th><th>적요2</th><th>매칭</th>
   </tr></thead><tbody>`;
 
   txns.forEach(txn => {
@@ -1758,6 +1774,8 @@ function renderDetailTable() {
       <td class="right">${txn.withdrawal > 0 ? fmt(txn.withdrawal) : ''}</td>
       <td class="right">${fmt(txn.balance)}</td>
       <td style="font-weight:500;color:${txn.matched?'var(--green)':'var(--red)'}">${txn.counterpartAcct || '-'}</td>
+      <td style="font-size:11px;color:var(--text2)">${txn.counterpartVendorCode || '-'}</td>
+      <td style="font-weight:500;color:${txn.matched?'var(--green)':'var(--text3)'}">${txn.counterpartVendor || '-'}</td>
       <td style="font-size:11px;color:var(--text2)">${txn.counterpartDesc || '-'}</td>
       <td class="center">${badge}</td>
     </tr>`;
@@ -1882,12 +1900,16 @@ function performManualMatch() {
     counterparts = slipEntries;
   }
   const acctSummary = counterparts.map(e => e.acctName).filter((v,i,a)=>a.indexOf(v)===i).join(', ') || slipEntries[0].acctName;
+  const vendorSummary = counterparts.map(e => e.vendorName).filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i).join(', ') || slipEntries[0].vendorName || '';
+  const vendorCodeSummary = counterparts.map(e => e.vendorCode).filter(Boolean).filter((v,i,a)=>a.indexOf(v)===i).join(', ') || slipEntries[0].vendorCode || '';
 
   txn.matched = true;
   txn.matchType = 'manual';
   txn.matchedSlipKey = selectedJournalSlip;
   txn.counterpartAcct = acctSummary;
   txn.counterpartDesc = slipEntries[0].desc || '';
+  txn.counterpartVendor = vendorSummary;
+  txn.counterpartVendorCode = vendorCodeSummary;
 
   ba.matchedCount = ba.transactions.filter(t => t.matched).length;
   ba.unmatchedCount = ba.transactions.filter(t => !t.matched).length;
@@ -1946,15 +1968,15 @@ async function createBankWorkbook(ba, wb) {
   const titleRow = ws.addRow([shortName + ' 통장정리 결과']);
   titleRow.font = titleFont;
   titleRow.height = 30;
-  ws.mergeCells(1, 1, 1, 9);
+  ws.mergeCells(1, 1, 1, 11);
 
   // Subtitle
   const subRow = ws.addRow([`매칭: ${ba.matchedCount}/${ba.transactions.length}건 (${pct}%) | 생성일: ${new Date().toLocaleDateString('ko-KR')}`]);
   subRow.font = { size:10, color:{argb:'FF666666'}, name:'맑은 고딕' };
-  ws.mergeCells(2, 1, 2, 9);
+  ws.mergeCells(2, 1, 2, 11);
 
   // Header
-  const headers = ['거래일', '적요', '입금', '출금', '잔액', '상대계정', '적요2(분개장)', '매칭상태'];
+  const headers = ['거래일', '적요', '입금', '출금', '잔액', '상대계정', '거래처코드', '거래처명', '적요2(분개장)', '매칭상태'];
   const hRow = ws.addRow(headers);
   hRow.eachCell((cell, col) => {
     cell.fill = headerFill;
@@ -1974,6 +1996,8 @@ async function createBankWorkbook(ba, wb) {
       txn.withdrawal > 0 ? txn.withdrawal : null,
       txn.balance || null,
       txn.counterpartAcct || '',
+      txn.counterpartVendorCode || '',
+      txn.counterpartVendor || '',
       txn.counterpartDesc || '',
       statusText,
     ]);
@@ -1987,7 +2011,8 @@ async function createBankWorkbook(ba, wb) {
       if (col === 3 || col === 4 || col === 5) cell.numFmt = '#,##0';
       if (col === 6 && txn.matched) cell.font = greenFont;
       if (col === 6 && !txn.matched) cell.font = { ...dataFont, color:{argb:'FFDC2626'} };
-      if (col === 8) {
+      if (col === 8 && txn.matched) cell.font = greenFont;
+      if (col === 10) {
         if (txn.matched) cell.font = txn.matchType === 'exact' ? greenFont : amberFont;
         else cell.font = redFont;
       }
@@ -1997,7 +2022,7 @@ async function createBankWorkbook(ba, wb) {
   // Column widths
   ws.columns = [
     { width:12 }, { width:30 }, { width:15 }, { width:15 }, { width:18 },
-    { width:20 }, { width:25 }, { width:14 },
+    { width:20 }, { width:14 }, { width:20 }, { width:25 }, { width:14 },
   ];
 
   return ws;
