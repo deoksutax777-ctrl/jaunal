@@ -29,8 +29,6 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 
 /* Screens */
 .screen{display:none;min-height:calc(100vh - 60px)}.screen.active{display:flex;flex-direction:column}
-#screen-upload{align-items:center;justify-content:center;padding:40px 20px;position:relative;overflow:hidden}
-#screen-upload::before{content:'';position:absolute;top:-200px;left:-200px;width:600px;height:600px;background:radial-gradient(circle,var(--glow) 0%,transparent 70%);pointer-events:none}
 .upload-title{font-size:28px;font-weight:700;letter-spacing:-0.5px;margin-bottom:4px;background:linear-gradient(135deg,var(--text) 0%,var(--accent) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
 .upload-by{font-size:13px;color:var(--accent);letter-spacing:1.5px;font-weight:500;margin-bottom:16px;opacity:0.85}
 .upload-subtitle{font-size:13px;color:var(--text3);margin-bottom:40px;text-align:center;line-height:1.8}
@@ -55,7 +53,6 @@ body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text
 .bank-file-tag .remove-btn:hover{opacity:1}
 
 /* Mapping */
-#screen-mapping{padding:24px 32px}
 .mapping-section{margin-bottom:32px}
 .mapping-section-title{font-size:15px;font-weight:600;margin-bottom:4px}
 .mapping-section-sub{font-size:12px;color:var(--text3);margin-bottom:16px}
@@ -200,6 +197,30 @@ select:focus{outline:none;border-color:var(--accent)}
 
 .analysis-footer{text-align:center;padding:24px 0 32px;font-size:11px;color:var(--text3);letter-spacing:0.3px;opacity:0.5}
 
+/* Analysis screens */
+#screen-journal-upload{align-items:center;justify-content:flex-start;padding:40px 20px;position:relative;overflow:hidden}
+#screen-journal-upload::before{content:'';position:absolute;top:-200px;left:-200px;width:600px;height:600px;background:radial-gradient(circle,var(--glow) 0%,transparent 70%);pointer-events:none}
+#screen-bank-upload{align-items:center;justify-content:flex-start;padding:40px 20px;position:relative;overflow:hidden}
+#screen-bank-upload::before{content:'';position:absolute;top:-200px;left:-200px;width:600px;height:600px;background:radial-gradient(circle,var(--glow) 0%,transparent 70%);pointer-events:none}
+#screen-journal-analysis,#screen-bank-analysis{padding:24px 32px}
+.analysis-section{margin-bottom:24px}
+.analysis-section-title{font-size:15px;font-weight:600;margin-bottom:16px;display:flex;align-items:center;gap:8px}
+.quality-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:24px}
+.quality-item{display:flex;align-items:center;gap:10px;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:10px;font-size:13px}
+.quality-item .qi-icon{font-size:18px;flex-shrink:0}
+.quality-item .qi-label{color:var(--text2);flex:1}
+.quality-item .qi-value{font-family:'JetBrains Mono',monospace;font-weight:600}
+.quality-item.ok .qi-value{color:var(--green)}
+.quality-item.warn .qi-value{color:var(--amber)}
+.quality-item.error .qi-value{color:var(--red)}
+.bank-detect-list{display:flex;flex-direction:column;gap:8px;margin-top:16px;width:100%;max-width:600px}
+.bank-detect-item{display:flex;align-items:center;gap:12px;padding:10px 16px;background:var(--surface);border:1px solid var(--border);border-radius:10px;font-size:13px}
+.bank-detect-item .bdi-name{flex:1;font-weight:500}
+.bank-detect-item .bdi-status{font-size:12px;font-weight:600}
+.bank-detect-item .bdi-status.ok{color:var(--green)}
+.bank-detect-item .bdi-status.fail{color:var(--red)}
+.nav-buttons{display:flex;gap:12px;justify-content:center;margin-top:24px;padding-bottom:40px}
+
 /* Slip detail */
 .slip-detail{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;margin:8px 0;font-size:11px}
 .slip-detail table{width:100%;border-collapse:collapse}
@@ -214,7 +235,8 @@ select:focus{outline:none;border-color:var(--accent)}
   .upload-zones{flex-direction:column;max-width:400px}
   .mapping-grid{grid-template-columns:1fr}
   .manual-match-panel{grid-template-columns:1fr}
-  #screen-mapping{padding:16px}
+  #screen-journal-analysis,#screen-bank-analysis{padding:16px}
+  .quality-grid{grid-template-columns:1fr}
 }
 </style>
 </head>
@@ -229,19 +251,23 @@ select:focus{outline:none;border-color:var(--accent)}
 
 <!-- STEPS -->
 <div class="steps-bar" id="steps-bar">
-  <div class="step-item active" id="step-1"><span class="step-num">1</span> 파일 업로드</div>
+  <div class="step-item active" id="step-1"><span class="step-num">1</span> 분개장 업로드</div>
   <div class="step-connector" id="conn-12"></div>
-  <div class="step-item" id="step-2"><span class="step-num">2</span> 매핑 설정</div>
+  <div class="step-item" id="step-2"><span class="step-num">2</span> 분개장 분석</div>
   <div class="step-connector" id="conn-23"></div>
-  <div class="step-item" id="step-3"><span class="step-num">3</span> 매칭 분석</div>
+  <div class="step-item" id="step-3"><span class="step-num">3</span> 통장 업로드</div>
+  <div class="step-connector" id="conn-34"></div>
+  <div class="step-item" id="step-4"><span class="step-num">4</span> 통장 분석</div>
+  <div class="step-connector" id="conn-45"></div>
+  <div class="step-item" id="step-5"><span class="step-num">5</span> 매핑/매칭</div>
 </div>
 
-<!-- SCREEN 1: UPLOAD -->
-<div class="screen active" id="screen-upload">
+<!-- SCREEN 1: JOURNAL UPLOAD -->
+<div class="screen active" id="screen-journal-upload">
   <div class="upload-title">통장정리 자동화</div>
   <div class="upload-by">by Deoksu Tax Firm</div>
-  <div class="upload-subtitle">분개장 엑셀과 통장(거래내역서) 엑셀을 업로드하세요.<br>통장 파일은 여러 개를 동시에 업로드할 수 있습니다.<br>브라우저에서 처리되며 데이터는 외부로 전송되지 않습니다.</div>
-  <div class="upload-zones">
+  <div class="upload-subtitle">분개장 엑셀 파일을 업로드하세요.<br>브라우저에서 처리되며 데이터는 외부로 전송되지 않습니다.</div>
+  <div class="upload-zones" style="max-width:400px">
     <div class="upload-zone" id="zone-journal" onclick="document.getElementById('file-journal').click()">
       <div class="zone-icon">&#128215;</div>
       <div class="zone-label">분개장</div>
@@ -249,6 +275,58 @@ select:focus{outline:none;border-color:var(--accent)}
       <div class="zone-file" id="file-journal-name"></div>
       <input type="file" id="file-journal" accept=".xlsx,.xls">
     </div>
+  </div>
+  <!-- Mapping section - appears after file upload -->
+  <div id="journal-mapping-section" class="hidden" style="width:100%;max-width:1100px;margin-top:32px;padding:0 20px">
+    <div class="mapping-section">
+      <div class="mapping-section-title">&#128215; 분개장 컬럼 매핑</div>
+      <div class="mapping-section-sub">미리보기를 확인한 후, 각 항목에 해당하는 컬럼을 지정해주세요.</div>
+      <div class="header-row-selector">
+        <label>데이터 시작 행:</label>
+        <select id="journal-start-row"></select>
+      </div>
+      <div class="preview-wrap" id="journal-preview"></div>
+      <div class="mapping-grid" id="journal-mapping-grid"></div>
+    </div>
+  </div>
+  <div class="upload-actions"><button class="btn btn-primary" id="btn-to-journal-analysis" disabled>다음: 분개장 분석 &#8594;</button></div>
+  <div class="global-error" id="upload-error-journal"></div>
+  <div class="global-footer">Made with &#44608;&#53468;&#54788; &#49464;&#47924;&#49324; &middot; Claude AI</div>
+</div>
+
+<!-- SCREEN 2: JOURNAL ANALYSIS -->
+<div class="screen" id="screen-journal-analysis">
+  <div class="analysis-section">
+    <div class="analysis-section-title">&#128215; 분개장 분석 결과</div>
+    <div class="grid-4" id="ja-summary-cards"></div>
+  </div>
+  <div class="analysis-section">
+    <div class="analysis-section-title">&#128269; 데이터 품질 검증</div>
+    <div class="quality-grid" id="ja-quality"></div>
+  </div>
+  <div class="analysis-section">
+    <div class="analysis-section-title">&#128202; 계정과목별 집계 (상위 15)</div>
+    <div class="card"><div style="max-height:400px;overflow-y:auto" id="ja-acct-table"></div></div>
+  </div>
+  <div class="analysis-section hidden" id="ja-vendor-section">
+    <div class="analysis-section-title">&#127970; 거래처별 집계 (상위 15)</div>
+    <div class="card"><div style="max-height:300px;overflow-y:auto" id="ja-vendor-table"></div></div>
+  </div>
+  <div class="analysis-section hidden" id="ja-botongyegeum-section">
+    <div class="analysis-section-title">&#127974; 보통예금 감지</div>
+    <div id="ja-botongyegeum-info" style="padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:10px;font-size:13px"></div>
+  </div>
+  <div class="nav-buttons">
+    <button class="btn btn-secondary" id="btn-back-to-journal-upload">&#8592; 이전</button>
+    <button class="btn btn-primary" id="btn-to-bank-upload">다음: 통장 업로드 &#8594;</button>
+  </div>
+</div>
+
+<!-- SCREEN 3: BANK UPLOAD -->
+<div class="screen" id="screen-bank-upload">
+  <div class="upload-title" style="font-size:22px">&#127974; 통장 거래내역서 업로드</div>
+  <div class="upload-subtitle">통장(거래내역서) 엑셀 파일을 업로드하세요.<br>여러 개의 통장 파일을 동시에 업로드할 수 있습니다.</div>
+  <div class="upload-zones" style="max-width:400px">
     <div class="upload-zone" id="zone-bank" onclick="document.getElementById('file-bank').click()">
       <div class="zone-icon">&#127974;</div>
       <div class="zone-label">통장 거래내역서</div>
@@ -258,44 +336,45 @@ select:focus{outline:none;border-color:var(--accent)}
       <input type="file" id="file-bank" accept=".xlsx,.xls" multiple>
     </div>
   </div>
-  <div class="upload-actions"><button class="btn btn-primary" id="btn-to-mapping" disabled>다음: 매핑 설정 &#8594;</button></div>
-  <div class="global-error" id="upload-error"></div>
-  <div class="global-footer">Made with &#44608;&#53468;&#54788; &#49464;&#47924;&#49324; &middot; Claude AI</div>
+  <div class="bank-detect-list" id="bank-detect-list"></div>
+  <div class="upload-actions" style="display:flex;gap:12px">
+    <button class="btn btn-secondary" id="btn-back-to-journal-analysis">&#8592; 이전</button>
+    <button class="btn btn-primary" id="btn-to-bank-analysis" disabled>다음: 통장 분석 &#8594;</button>
+  </div>
+  <div class="global-error" id="upload-error-bank"></div>
 </div>
 
-<!-- SCREEN 2: MAPPING -->
-<div class="screen" id="screen-mapping">
-  <!-- Journal mapping -->
-  <div class="mapping-section">
-    <div class="mapping-section-title">&#128215; 분개장 컬럼 매핑</div>
-    <div class="mapping-section-sub">미리보기를 확인한 후, 각 항목에 해당하는 컬럼을 지정해주세요.</div>
-    <div class="header-row-selector">
-      <label>데이터 시작 행:</label>
-      <select id="journal-start-row"></select>
+<!-- SCREEN 4: BANK ANALYSIS -->
+<div class="screen" id="screen-bank-analysis">
+  <div class="analysis-section">
+    <div class="analysis-section-title">&#127974; 통장 분석 결과</div>
+    <div class="grid-4" id="ba-summary-cards"></div>
+  </div>
+  <div class="analysis-section">
+    <div class="analysis-section-title">&#128202; 통장별 상세</div>
+    <div class="card"><div style="max-height:400px;overflow-y:auto" id="ba-per-file-table"></div></div>
+  </div>
+  <div class="analysis-section">
+    <div class="analysis-section-title">&#128269; 데이터 품질 검증</div>
+    <div class="quality-grid" id="ba-quality"></div>
+  </div>
+  <div class="nav-buttons">
+    <button class="btn btn-secondary" id="btn-back-to-bank-upload">&#8592; 이전</button>
+    <button class="btn btn-primary" id="btn-start-matching">매칭 시작 &#8594;</button>
+  </div>
+</div>
+
+<!-- SCREEN 5: MATCHING -->
+<div class="screen" id="screen-matching">
+  <!-- Pairing section -->
+  <div style="padding:20px 32px;background:var(--surface);border-bottom:1px solid var(--border)">
+    <div class="mapping-section" style="margin-bottom:0">
+      <div class="mapping-section-title">&#127974; 은행 계좌 페어링</div>
+      <div class="mapping-section-sub">분개장의 보통예금 거래처와 통장 파일을 연결합니다.</div>
+      <div id="pairing-info" style="font-size:13px;padding:12px 16px;background:var(--surface2);border:1px solid var(--border);border-radius:8px;margin-bottom:16px"></div>
+      <div id="pairing-table-wrap"></div>
     </div>
-    <div class="preview-wrap" id="journal-preview"></div>
-    <div class="mapping-grid" id="journal-mapping-grid"></div>
   </div>
-
-  <hr style="border:none;border-top:1px solid var(--border);margin:32px 0">
-
-  <!-- Bank pairing -->
-  <div class="mapping-section">
-    <div class="mapping-section-title">&#127974; 은행 계좌 페어링</div>
-    <div class="mapping-section-sub">분개장의 보통예금 거래처와 통장 파일을 연결합니다. 보통예금이 없는 분개장도 처리 가능합니다.</div>
-    <div id="pairing-info" style="font-size:13px;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-bottom:16px"></div>
-    <div id="pairing-table-wrap"></div>
-  </div>
-
-  <div style="display:flex;gap:12px;justify-content:center;margin-top:24px;padding-bottom:40px">
-    <button class="btn btn-secondary" id="btn-back-upload">&#8592; 파일 선택</button>
-    <button class="btn btn-primary" id="btn-run-matching">매칭 시작 &#8594;</button>
-  </div>
-  <div class="global-error" id="mapping-error"></div>
-</div>
-
-<!-- SCREEN 3: ANALYSIS -->
-<div class="screen" id="screen-analysis">
   <div class="header">
     <h1><em>&#9670;</em> 통장정리 자동화 <span class="header-by">by Deoksu Tax Firm</span></h1>
     <div class="header-right">
@@ -389,7 +468,7 @@ select:focus{outline:none;border-color:var(--accent)}
   <div class="drop-box">
     <div class="drop-icon">&#128194;</div>
     <div class="drop-title">엑셀 파일을 여기에 놓으세요</div>
-    <div class="drop-hint">분개장과 통장 파일을 자동으로 구분합니다</div>
+    <div class="drop-hint">현재 화면에 맞는 파일을 놓으세요</div>
   </div>
 </div>
 
@@ -412,6 +491,7 @@ let journalEntries = []; // parsed journal rows
 let bankAccounts = {}; // {fileId: {id,name,transactions,matched,unmatched}}
 let matchResults = {}; // {fileId: [...]}
 let hasBotongyegeum = false;
+let slipMap = {}; // {date_slipNo: [entries]}
 
 // Manual match state
 let selectedBankTxn = null;
@@ -444,10 +524,11 @@ try {
 // ============================================================
 // NAVIGATION
 // ============================================================
+const SCREEN_IDS = ['','screen-journal-upload','screen-journal-analysis','screen-bank-upload','screen-bank-analysis','screen-matching'];
 function goToScreen(n) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-  document.getElementById(['','screen-upload','screen-mapping','screen-analysis'][n]).classList.add('active');
-  for (let i = 1; i <= 3; i++) {
+  document.getElementById(SCREEN_IDS[n]).classList.add('active');
+  for (let i = 1; i <= 5; i++) {
     const el = document.getElementById('step-' + i);
     el.classList.remove('active','done');
     if (i < n) el.classList.add('done');
@@ -455,7 +536,9 @@ function goToScreen(n) {
   }
   document.getElementById('conn-12').classList.toggle('done', n > 1);
   document.getElementById('conn-23').classList.toggle('done', n > 2);
-  document.getElementById('steps-bar').style.display = n === 3 ? 'none' : 'flex';
+  document.getElementById('conn-34').classList.toggle('done', n > 3);
+  document.getElementById('conn-45').classList.toggle('done', n > 4);
+  document.getElementById('steps-bar').style.display = n === 5 ? 'none' : 'flex';
   window.scrollTo(0, 0);
 }
 
@@ -540,76 +623,127 @@ async function readBankExcel(file) {
 }
 
 // ============================================================
-// SCREEN 1: UPLOAD
+// SCREEN 1: JOURNAL UPLOAD
 // ============================================================
-function setupUpload() {
+function setupJournalUpload() {
   const journalZone = document.getElementById('zone-journal');
   const journalInput = document.getElementById('file-journal');
-  const bankZone = document.getElementById('zone-bank');
-  const bankInput = document.getElementById('file-bank');
 
-  // Journal zone
   ['dragenter','dragover'].forEach(evt => journalZone.addEventListener(evt, e => { e.preventDefault(); e.stopPropagation(); journalZone.classList.add('dragover'); }));
   ['dragleave','drop'].forEach(evt => journalZone.addEventListener(evt, e => { e.preventDefault(); e.stopPropagation(); journalZone.classList.remove('dragover'); }));
   journalZone.addEventListener('drop', e => { const f = e.dataTransfer.files[0]; if (f) loadJournalFile(f); });
   journalInput.addEventListener('change', e => { const f = e.target.files[0]; if (f) loadJournalFile(f); });
 
-  // Bank zone
+  document.getElementById('btn-to-journal-analysis').addEventListener('click', goToJournalAnalysis);
+}
+
+function setupBankUpload() {
+  const bankZone = document.getElementById('zone-bank');
+  const bankInput = document.getElementById('file-bank');
+
   ['dragenter','dragover'].forEach(evt => bankZone.addEventListener(evt, e => { e.preventDefault(); e.stopPropagation(); bankZone.classList.add('dragover'); }));
   ['dragleave','drop'].forEach(evt => bankZone.addEventListener(evt, e => { e.preventDefault(); e.stopPropagation(); bankZone.classList.remove('dragover'); }));
   bankZone.addEventListener('drop', e => { addBankFiles(Array.from(e.dataTransfer.files)); });
   bankInput.addEventListener('change', e => { addBankFiles(Array.from(e.target.files)); });
 
+  document.getElementById('btn-to-bank-analysis').addEventListener('click', goToBankAnalysis);
+  document.getElementById('btn-back-to-journal-analysis').addEventListener('click', () => goToScreen(2));
+}
+
+function setupNavigation() {
+  document.getElementById('btn-back-to-journal-upload').addEventListener('click', () => goToScreen(1));
+  document.getElementById('btn-to-bank-upload').addEventListener('click', () => goToScreen(3));
+  document.getElementById('btn-back-to-bank-upload').addEventListener('click', () => goToScreen(3));
+  document.getElementById('btn-start-matching').addEventListener('click', goToMatchingScreen);
+  document.getElementById('btn-reset').addEventListener('click', () => location.reload());
+
   // Global drag & drop
   let dragCounter = 0;
   const overlay = document.getElementById('global-drop-overlay');
-  document.addEventListener('dragenter', e => { e.preventDefault(); if (!document.getElementById('screen-upload').classList.contains('active')) return; dragCounter++; if (dragCounter === 1) overlay.classList.add('show'); });
+  document.addEventListener('dragenter', e => {
+    e.preventDefault();
+    const s1 = document.getElementById('screen-journal-upload').classList.contains('active');
+    const s3 = document.getElementById('screen-bank-upload').classList.contains('active');
+    if (!s1 && !s3) return;
+    dragCounter++; if (dragCounter === 1) overlay.classList.add('show');
+  });
   document.addEventListener('dragover', e => { e.preventDefault(); });
   document.addEventListener('dragleave', e => { e.preventDefault(); dragCounter--; if (dragCounter <= 0) { dragCounter = 0; overlay.classList.remove('show'); } });
   document.addEventListener('drop', e => {
     e.preventDefault(); dragCounter = 0; overlay.classList.remove('show');
-    if (!document.getElementById('screen-upload').classList.contains('active')) return;
+    const s1 = document.getElementById('screen-journal-upload').classList.contains('active');
+    const s3 = document.getElementById('screen-bank-upload').classList.contains('active');
+    if (!s1 && !s3) return;
     const files = Array.from(e.dataTransfer.files).filter(f => ['xlsx','xls'].includes(f.name.split('.').pop().toLowerCase()));
-    if (!files.length) { document.getElementById('upload-error').textContent = 'xlsx 또는 xls 파일만 지원합니다.'; return; }
-    // Auto-detect: if filename contains '분개장', it's journal; otherwise bank
-    files.forEach(f => {
-      if (f.name.includes('분개장') && !journalFile) loadJournalFile(f);
-      else addBankFiles([f]);
-    });
+    if (!files.length) return;
+    if (s1) { if (files[0]) loadJournalFile(files[0]); }
+    else if (s3) { addBankFiles(files); }
   });
-
-  document.getElementById('btn-to-mapping').addEventListener('click', goToMappingScreen);
-  document.getElementById('btn-back-upload').addEventListener('click', () => goToScreen(1));
-  document.getElementById('btn-run-matching').addEventListener('click', runMatching);
-  document.getElementById('btn-reset').addEventListener('click', () => location.reload());
 }
 
-function loadJournalFile(file) {
+async function loadJournalFile(file) {
   const ext = file.name.split('.').pop().toLowerCase();
-  if (!['xlsx','xls'].includes(ext)) { document.getElementById('upload-error').textContent = 'xlsx/xls 파일만 지원합니다.'; return; }
+  if (!['xlsx','xls'].includes(ext)) { document.getElementById('upload-error-journal').textContent = 'xlsx/xls 파일만 지원합니다.'; return; }
   journalFile = file;
   document.getElementById('zone-journal').classList.add('loaded');
   document.getElementById('file-journal-name').textContent = '\u2713 ' + file.name;
-  document.getElementById('upload-error').textContent = '';
-  updateUploadButton();
+  document.getElementById('upload-error-journal').textContent = '';
+
+  // Read Excel immediately and show mapping
+  showLoading('분개장 읽는 중...');
+  try {
+    journalSheet = await readExcel(file);
+  } catch(err) {
+    hideLoading();
+    document.getElementById('upload-error-journal').textContent = '파일을 읽을 수 없습니다: ' + err.message;
+    return;
+  }
+  hideLoading();
+  renderJournalMapping();
+  document.getElementById('journal-mapping-section').classList.remove('hidden');
+  document.getElementById('btn-to-journal-analysis').disabled = false;
 }
 
-function addBankFiles(files) {
-  files.forEach(f => {
+async function addBankFiles(files) {
+  for (const f of files) {
     const ext = f.name.split('.').pop().toLowerCase();
-    if (!['xlsx','xls'].includes(ext)) return;
-    // Avoid duplicates
-    if (bankFiles.some(bf => bf.name === f.name && bf.file.size === f.size)) return;
-    bankFiles.push({ id: genId(), file: f, name: f.name });
-  });
+    if (!['xlsx','xls'].includes(ext)) continue;
+    if (bankFiles.some(bf => bf.name === f.name && bf.file.size === f.size)) continue;
+    const id = genId();
+    bankFiles.push({ id, file: f, name: f.name });
+
+    // Read and detect immediately
+    showLoading('통장 읽는 중... (' + f.name + ')');
+    try {
+      bankSheets[id] = await readBankExcel(f);
+      const result = detectBankMapping(bankSheets[id]);
+      if (result) {
+        bankMappings[id] = result.mapping;
+        bankDataStarts[id] = result.dataStart;
+      } else {
+        bankMappings[id] = {};
+        bankDataStarts[id] = 1;
+      }
+    } catch(err) {
+      // File read failed, keep in list but mark as failed
+      bankMappings[id] = {};
+      bankDataStarts[id] = 1;
+    }
+  }
+  hideLoading();
   renderBankFileList();
-  updateUploadButton();
+  renderBankDetectList();
+  document.getElementById('btn-to-bank-analysis').disabled = bankFiles.length === 0;
 }
 
 function removeBankFile(id) {
   bankFiles = bankFiles.filter(bf => bf.id !== id);
+  delete bankSheets[id];
+  delete bankMappings[id];
+  delete bankDataStarts[id];
   renderBankFileList();
-  updateUploadButton();
+  renderBankDetectList();
+  document.getElementById('btn-to-bank-analysis').disabled = bankFiles.length === 0;
 }
 
 function renderBankFileList() {
@@ -629,12 +763,21 @@ function renderBankFileList() {
   ).join('');
 }
 
-function updateUploadButton() {
-  document.getElementById('btn-to-mapping').disabled = !(journalFile && bankFiles.length > 0);
+function renderBankDetectList() {
+  const wrap = document.getElementById('bank-detect-list');
+  if (bankFiles.length === 0) { wrap.innerHTML = ''; return; }
+  wrap.innerHTML = bankFiles.map(bf => {
+    const bm = bankMappings[bf.id] || {};
+    const ok = bm.date !== undefined && (bm.deposit !== undefined || bm.withdrawal !== undefined);
+    return `<div class="bank-detect-item">
+      <span class="bdi-name">${bf.name}</span>
+      <span class="bdi-status ${ok?'ok':'fail'}">${ok ? '&#10003; 컬럼 감지 완료' : '&#9888; 수동 확인 필요'}</span>
+    </div>`;
+  }).join('');
 }
 
 // ============================================================
-// SCREEN 2: MAPPING
+// JOURNAL MAPPING (used in Screen 1)
 // ============================================================
 const JOURNAL_FIELDS = [
   { id:'date', label:'일자', required:true },
@@ -662,24 +805,318 @@ const JOURNAL_AUTO_RULES = {
   vendorName: { exact:['거래처명','거래처','업체명','상호'], partial:['거래처','업체'] },
 };
 
-async function goToMappingScreen() {
-  showLoading('파일 읽는 중...');
-  try {
-    journalSheet = await readExcel(journalFile);
-    for (const bf of bankFiles) {
-      showLoading(`통장 읽는 중... (${bf.name})`);
-      bankSheets[bf.id] = await readBankExcel(bf.file);
-    }
-  } catch(err) {
-    hideLoading();
-    document.getElementById('upload-error').textContent = '파일을 읽을 수 없습니다: ' + err.message;
+// ============================================================
+// SCREEN 1→2: JOURNAL ANALYSIS FLOW
+// ============================================================
+async function goToJournalAnalysis() {
+  updateJournalMapping();
+  const m = journalMapping;
+
+  // Validate required mappings
+  const missing = [];
+  if (m.date === undefined) missing.push('일자');
+  if (m.acctName === undefined) missing.push('계정과목');
+  if (m.debit === undefined) missing.push('차변금액');
+  if (m.credit === undefined) missing.push('대변금액');
+  if (missing.length) {
+    document.getElementById('upload-error-journal').textContent = '필수 매핑 누락: ' + missing.join(', ');
     return;
   }
+
+  showLoading('분개장 분석 중...');
+  await new Promise(r => setTimeout(r, 50));
+
+  parseJournalEntries();
+  renderJournalAnalysis();
   hideLoading();
   goToScreen(2);
-  renderJournalMapping();
-  detectBankMappings();
+}
+
+function parseJournalEntries() {
+  const m = journalMapping;
+  journalEntries = [];
+  for (let i = journalDataStart; i < journalSheet.length; i++) {
+    const row = journalSheet[i];
+    if (!row) continue;
+    const dateStr = normalizeDate(row[m.date]);
+    if (!dateStr) continue;
+    const acctName = String(row[m.acctName] || '').trim();
+    if (!acctName) continue;
+
+    journalEntries.push({
+      rowIdx: i,
+      date: dateStr,
+      slipNo: m.slipNo !== undefined ? String(row[m.slipNo] || '').trim() : String(i),
+      side: m.side !== undefined ? String(row[m.side] || '').trim() : '',
+      acctCode: m.acctCode !== undefined ? String(row[m.acctCode] || '').trim() : '',
+      acctName,
+      debit: parseNum(row[m.debit]),
+      credit: parseNum(row[m.credit]),
+      desc: m.desc !== undefined ? String(row[m.desc] || '').trim() : '',
+      vendorCode: m.vendorCode !== undefined ? String(row[m.vendorCode] || '').trim() : '',
+      vendorName: m.vendorName !== undefined ? String(row[m.vendorName] || '').trim() : '',
+    });
+  }
+
+  // Build slipMap
+  slipMap = {};
+  journalEntries.forEach(e => {
+    const key = e.date + '_' + e.slipNo;
+    if (!slipMap[key]) slipMap[key] = [];
+    slipMap[key].push(e);
+  });
+}
+
+function renderJournalAnalysis() {
+  const entries = journalEntries;
+  if (entries.length === 0) return;
+
+  // Summary stats
+  const totalDebit = entries.reduce((s, e) => s + e.debit, 0);
+  const totalCredit = entries.reduce((s, e) => s + e.credit, 0);
+  const diff = Math.round((totalDebit - totalCredit) * 100) / 100;
+  const dates = entries.map(e => e.date).filter(Boolean).sort();
+  const minDate = dates[0] || '-';
+  const maxDate = dates[dates.length - 1] || '-';
+  const slipCount = Object.keys(slipMap).length;
+
+  document.getElementById('ja-summary-cards').innerHTML = `
+    <div class="summary-card"><div class="label">전체 분개 항목</div><div class="value">${fmt(entries.length)}<span style="font-size:14px;color:var(--text3)">건</span></div><div class="change neutral">${slipCount}개 전표</div></div>
+    <div class="summary-card"><div class="label">기간</div><div class="value" style="font-size:16px">${minDate}</div><div class="change neutral">~ ${maxDate}</div></div>
+    <div class="summary-card"><div class="label">차변 / 대변 합계</div><div class="value" style="font-size:16px">${fmt(totalDebit)}</div><div class="change neutral">대변: ${fmt(totalCredit)}</div></div>
+    <div class="summary-card"><div class="label">차대 차이</div><div class="value" style="color:${Math.abs(diff) < 1 ? 'var(--green)' : 'var(--red)'};font-size:18px">${fmt(diff)}</div><div class="change" style="color:${Math.abs(diff) < 1 ? 'var(--green)' : 'var(--red)'}">${Math.abs(diff) < 1 ? '균형' : '불균형'}</div></div>
+  `;
+
+  // Quality checks
+  const totalRows = journalSheet.length - journalDataStart;
+  const skippedDate = totalRows - entries.length;
+  const missingAcct = entries.filter(e => !e.acctName).length;
+  const zeroAmt = entries.filter(e => e.debit === 0 && e.credit === 0).length;
+  // Duplicate slip numbers on different dates
+  const slipDates = {};
+  entries.forEach(e => {
+    if (!slipDates[e.slipNo]) slipDates[e.slipNo] = new Set();
+    slipDates[e.slipNo].add(e.date);
+  });
+  const dupSlips = Object.entries(slipDates).filter(([k, v]) => v.size > 1).length;
+  const avgPerSlip = slipCount > 0 ? (entries.length / slipCount).toFixed(1) : 0;
+
+  document.getElementById('ja-quality').innerHTML = `
+    <div class="quality-item ${skippedDate === 0 ? 'ok' : 'warn'}"><span class="qi-icon">${skippedDate === 0 ? '&#10003;' : '&#9888;'}</span><span class="qi-label">날짜 누락 (건너뛴 행)</span><span class="qi-value">${skippedDate}건</span></div>
+    <div class="quality-item ${missingAcct === 0 ? 'ok' : 'error'}"><span class="qi-icon">${missingAcct === 0 ? '&#10003;' : '&#10060;'}</span><span class="qi-label">계정과목 누락</span><span class="qi-value">${missingAcct}건</span></div>
+    <div class="quality-item ${zeroAmt === 0 ? 'ok' : 'warn'}"><span class="qi-icon">${zeroAmt === 0 ? '&#10003;' : '&#9888;'}</span><span class="qi-label">금액 0원 항목</span><span class="qi-value">${zeroAmt}건</span></div>
+    <div class="quality-item ${dupSlips === 0 ? 'ok' : 'warn'}"><span class="qi-icon">${dupSlips === 0 ? '&#10003;' : '&#9888;'}</span><span class="qi-label">전표번호 중복 (다른 일자)</span><span class="qi-value">${dupSlips}건</span></div>
+    <div class="quality-item ok"><span class="qi-icon">&#128200;</span><span class="qi-label">전표당 평균 항목</span><span class="qi-value">${avgPerSlip}건</span></div>
+    <div class="quality-item ok"><span class="qi-icon">&#128198;</span><span class="qi-label">전체 전표 수</span><span class="qi-value">${slipCount}개</span></div>
+  `;
+
+  // Account breakdown
+  const acctStats = {};
+  entries.forEach(e => {
+    if (!acctStats[e.acctName]) acctStats[e.acctName] = { count: 0, debit: 0, credit: 0 };
+    acctStats[e.acctName].count++;
+    acctStats[e.acctName].debit += e.debit;
+    acctStats[e.acctName].credit += e.credit;
+  });
+  const acctArr = Object.entries(acctStats).sort((a, b) => b[1].count - a[1].count).slice(0, 15);
+  document.getElementById('ja-acct-table').innerHTML = `<table class="data-table"><thead><tr>
+    <th>계정과목</th><th class="right">건수</th><th class="right">차변 합계</th><th class="right">대변 합계</th>
+  </tr></thead><tbody>
+  ${acctArr.map(([name, s]) => `<tr><td style="font-weight:500">${name}</td><td class="right">${fmt(s.count)}</td><td class="right">${fmt(s.debit)}</td><td class="right">${fmt(s.credit)}</td></tr>`).join('')}
+  </tbody></table>`;
+
+  // Vendor breakdown
+  const vendorSection = document.getElementById('ja-vendor-section');
+  const hasVendor = entries.some(e => e.vendorName);
+  if (hasVendor) {
+    vendorSection.classList.remove('hidden');
+    const vendorStats = {};
+    entries.forEach(e => {
+      const v = e.vendorName || '(없음)';
+      if (!vendorStats[v]) vendorStats[v] = { count: 0, debit: 0, credit: 0 };
+      vendorStats[v].count++;
+      vendorStats[v].debit += e.debit;
+      vendorStats[v].credit += e.credit;
+    });
+    const vendorArr = Object.entries(vendorStats).sort((a, b) => b[1].count - a[1].count).slice(0, 15);
+    document.getElementById('ja-vendor-table').innerHTML = `<table class="data-table"><thead><tr>
+      <th>거래처</th><th class="right">건수</th><th class="right">차변 합계</th><th class="right">대변 합계</th>
+    </tr></thead><tbody>
+    ${vendorArr.map(([name, s]) => `<tr><td style="font-weight:500">${name}</td><td class="right">${fmt(s.count)}</td><td class="right">${fmt(s.debit)}</td><td class="right">${fmt(s.credit)}</td></tr>`).join('')}
+    </tbody></table>`;
+  } else {
+    vendorSection.classList.add('hidden');
+  }
+
+  // 보통예금 detection
+  const bgSection = document.getElementById('ja-botongyegeum-section');
+  const bgEntries = entries.filter(e => e.acctName === '보통예금' || e.acctCode === '0103');
+  if (bgEntries.length > 0) {
+    bgSection.classList.remove('hidden');
+    const bgVendors = {};
+    bgEntries.forEach(e => { if (e.vendorName) bgVendors[e.vendorName] = (bgVendors[e.vendorName] || 0) + 1; });
+    const vendorList = Object.entries(bgVendors).sort((a,b) => b[1]-a[1]);
+    document.getElementById('ja-botongyegeum-info').innerHTML = `
+      <span style="color:var(--green);font-weight:600">&#10003;</span> 보통예금 항목 <b>${bgEntries.length}건</b> 감지됨
+      ${vendorList.length > 0 ? '<br>거래처: ' + vendorList.map(([v,c]) => `<b>${v}</b> (${c}건)`).join(', ') : ''}
+    `;
+  } else {
+    bgSection.classList.remove('hidden');
+    document.getElementById('ja-botongyegeum-info').innerHTML = `
+      <span style="color:var(--amber);font-weight:600">&#9888;</span> 보통예금 항목이 없습니다. 매칭 시 <b>금액+일자+적요 기반 매칭</b>을 사용합니다.
+    `;
+  }
+}
+
+// ============================================================
+// SCREEN 3→4: BANK ANALYSIS FLOW
+// ============================================================
+async function goToBankAnalysis() {
+  showLoading('통장 거래 분석 중...');
+  await new Promise(r => setTimeout(r, 50));
+
+  parseBankTransactions();
+  renderBankAnalysis();
+  hideLoading();
+  goToScreen(4);
+}
+
+function parseBankTransactions() {
+  bankAccounts = {};
+  for (const bf of bankFiles) {
+    const sheet = bankSheets[bf.id];
+    const bm = bankMappings[bf.id] || {};
+    const ds = bankDataStarts[bf.id] || 1;
+    if (bm.date === undefined) continue;
+
+    const transactions = [];
+    for (let i = ds; i < sheet.length; i++) {
+      const row = sheet[i];
+      if (!row) continue;
+      const dateStr = normalizeDate(row[bm.date]);
+      if (!dateStr) continue;
+      const deposit = Math.abs(parseNum(row[bm.deposit]));
+      const withdrawal = Math.abs(parseNum(row[bm.withdrawal]));
+      if (deposit === 0 && withdrawal === 0) continue;
+
+      transactions.push({
+        rowIdx: i,
+        date: dateStr,
+        rawDate: String(row[bm.date] || ''),
+        desc: bm.desc !== undefined ? String(row[bm.desc] || '').trim() : '',
+        counterparty: bm.counterparty !== undefined ? String(row[bm.counterparty] || '').trim() : '',
+        deposit,
+        withdrawal,
+        balance: bm.balance !== undefined ? parseNum(row[bm.balance]) : 0,
+        matched: false,
+        matchType: null,
+        matchedSlipKey: null,
+        counterpartAcct: '',
+        counterpartDesc: '',
+        originalRow: row,
+      });
+    }
+
+    bankAccounts[bf.id] = {
+      id: bf.id,
+      name: bf.name,
+      transactions,
+      matchedCount: 0,
+      unmatchedCount: transactions.length,
+    };
+  }
+}
+
+function renderBankAnalysis() {
+  const allBanks = Object.values(bankAccounts);
+  const totalTxns = allBanks.reduce((s, ba) => s + ba.transactions.length, 0);
+  const totalDeposits = allBanks.reduce((s, ba) => s + ba.transactions.reduce((ss, t) => ss + t.deposit, 0), 0);
+  const totalWithdrawals = allBanks.reduce((s, ba) => s + ba.transactions.reduce((ss, t) => ss + t.withdrawal, 0), 0);
+  const netCashFlow = totalDeposits - totalWithdrawals;
+
+  document.getElementById('ba-summary-cards').innerHTML = `
+    <div class="summary-card"><div class="label">전체 거래</div><div class="value">${fmt(totalTxns)}<span style="font-size:14px;color:var(--text3)">건</span></div><div class="change neutral">${allBanks.length}개 통장</div></div>
+    <div class="summary-card"><div class="label">총 입금액</div><div class="value" style="color:var(--green);font-size:18px">${fmt(totalDeposits)}</div></div>
+    <div class="summary-card"><div class="label">총 출금액</div><div class="value" style="color:var(--red);font-size:18px">${fmt(totalWithdrawals)}</div></div>
+    <div class="summary-card"><div class="label">순 현금흐름</div><div class="value" style="color:${netCashFlow >= 0 ? 'var(--green)' : 'var(--red)'};font-size:18px">${fmt(netCashFlow)}</div></div>
+  `;
+
+  // Per-file table
+  document.getElementById('ba-per-file-table').innerHTML = `<table class="data-table"><thead><tr>
+    <th>통장</th><th class="right">건수</th><th>기간</th><th class="right">입금 합계</th><th class="right">출금 합계</th><th class="right">시작 잔액</th><th class="right">종료 잔액</th>
+  </tr></thead><tbody>
+  ${allBanks.map(ba => {
+    const txns = ba.transactions;
+    const dates = txns.map(t => t.date).sort();
+    const depSum = txns.reduce((s, t) => s + t.deposit, 0);
+    const witSum = txns.reduce((s, t) => s + t.withdrawal, 0);
+    const firstBal = txns.length > 0 ? txns[0].balance : 0;
+    const lastBal = txns.length > 0 ? txns[txns.length - 1].balance : 0;
+    const shortName = ba.name.replace(/거래내역서\.xlsx?$/,'').trim();
+    return `<tr>
+      <td style="font-weight:500">${shortName}</td>
+      <td class="right">${fmt(txns.length)}</td>
+      <td style="font-size:11px">${dates[0] || '-'} ~ ${dates[dates.length-1] || '-'}</td>
+      <td class="right" style="color:var(--green)">${fmt(depSum)}</td>
+      <td class="right" style="color:var(--red)">${fmt(witSum)}</td>
+      <td class="right">${fmt(firstBal)}</td>
+      <td class="right">${fmt(lastBal)}</td>
+    </tr>`;
+  }).join('')}
+  </tbody></table>`;
+
+  // Quality checks
+  let totalSkipped = 0;
+  let totalZero = 0;
+  let balanceIssues = 0;
+  allBanks.forEach(ba => {
+    const sheet = bankSheets[ba.id];
+    const ds = bankDataStarts[ba.id] || 1;
+    const bm = bankMappings[ba.id] || {};
+    let skipped = 0;
+    for (let i = ds; i < sheet.length; i++) {
+      const row = sheet[i];
+      if (!row) continue;
+      const dateStr = normalizeDate(row[bm.date]);
+      if (!dateStr) { skipped++; continue; }
+      const dep = Math.abs(parseNum(row[bm.deposit]));
+      const wit = Math.abs(parseNum(row[bm.withdrawal]));
+      if (dep === 0 && wit === 0) totalZero++;
+    }
+    totalSkipped += skipped;
+    // Balance continuity check
+    const txns = ba.transactions;
+    for (let i = 1; i < txns.length; i++) {
+      if (txns[i].balance === 0 || txns[i-1].balance === 0) continue;
+      const expected = txns[i-1].balance + txns[i].deposit - txns[i].withdrawal;
+      if (Math.abs(expected - txns[i].balance) > 1) balanceIssues++;
+    }
+  });
+
+  document.getElementById('ba-quality').innerHTML = `
+    <div class="quality-item ${totalSkipped === 0 ? 'ok' : 'warn'}"><span class="qi-icon">${totalSkipped === 0 ? '&#10003;' : '&#9888;'}</span><span class="qi-label">날짜 누락 (건너뛴 행)</span><span class="qi-value">${totalSkipped}건</span></div>
+    <div class="quality-item ${totalZero === 0 ? 'ok' : 'warn'}"><span class="qi-icon">${totalZero === 0 ? '&#10003;' : '&#9888;'}</span><span class="qi-label">금액 0원 행</span><span class="qi-value">${totalZero}건</span></div>
+    <div class="quality-item ${balanceIssues === 0 ? 'ok' : 'warn'}"><span class="qi-icon">${balanceIssues === 0 ? '&#10003;' : '&#9888;'}</span><span class="qi-label">잔액 연속성 불일치</span><span class="qi-value">${balanceIssues}건</span></div>
+    <div class="quality-item ok"><span class="qi-icon">&#127974;</span><span class="qi-label">감지된 통장 수</span><span class="qi-value">${allBanks.length}개</span></div>
+  `;
+}
+
+// ============================================================
+// SCREEN 4→5: MATCHING FLOW
+// ============================================================
+async function goToMatchingScreen() {
+  showLoading('매칭 수행 중...');
+  await new Promise(r => setTimeout(r, 50));
+
   buildPairing();
+  runMatching();
+
+  hideLoading();
+  goToScreen(5);
+  renderDashboard();
+  renderDetailTab();
+  renderManualMatchTab();
+  renderExportTab();
 }
 
 function autoMapJournal(sheet) {
@@ -1043,107 +1480,19 @@ function renderPairingTable() {
 // ============================================================
 // MATCHING ENGINE
 // ============================================================
-async function runMatching() {
-  updateJournalMapping();
-  const m = journalMapping;
-
-  // Validate required mappings
-  const missing = [];
-  if (m.date === undefined) missing.push('일자');
-  if (m.acctName === undefined) missing.push('계정과목');
-  if (m.debit === undefined) missing.push('차변금액');
-  if (m.credit === undefined) missing.push('대변금액');
-  if (missing.length) {
-    document.getElementById('mapping-error').textContent = '필수 매핑 누락: ' + missing.join(', ');
-    return;
-  }
-
-  showLoading('분개장 분석 중...');
-  await new Promise(r => setTimeout(r, 50));
-
-  // Parse journal entries
-  journalEntries = [];
-  for (let i = journalDataStart; i < journalSheet.length; i++) {
-    const row = journalSheet[i];
-    if (!row) continue;
-    const dateStr = normalizeDate(row[m.date]);
-    if (!dateStr) continue;
-    const acctName = String(row[m.acctName] || '').trim();
-    if (!acctName) continue;
-
-    journalEntries.push({
-      rowIdx: i,
-      date: dateStr,
-      slipNo: m.slipNo !== undefined ? String(row[m.slipNo] || '').trim() : String(i),
-      side: m.side !== undefined ? String(row[m.side] || '').trim() : '',
-      acctCode: m.acctCode !== undefined ? String(row[m.acctCode] || '').trim() : '',
-      acctName,
-      debit: parseNum(row[m.debit]),
-      credit: parseNum(row[m.credit]),
-      desc: m.desc !== undefined ? String(row[m.desc] || '').trim() : '',
-      vendorCode: m.vendorCode !== undefined ? String(row[m.vendorCode] || '').trim() : '',
-      vendorName: m.vendorName !== undefined ? String(row[m.vendorName] || '').trim() : '',
+function runMatching() {
+  // Reset match state on bank transactions
+  Object.values(bankAccounts).forEach(ba => {
+    ba.transactions.forEach(t => {
+      t.matched = false;
+      t.matchType = null;
+      t.matchedSlipKey = null;
+      t.counterpartAcct = '';
+      t.counterpartDesc = '';
     });
-  }
-
-  // Group into slips
-  const slipMap = {};
-  journalEntries.forEach(e => {
-    const key = e.date + '_' + e.slipNo;
-    if (!slipMap[key]) slipMap[key] = [];
-    slipMap[key].push(e);
+    ba.matchedCount = 0;
+    ba.unmatchedCount = ba.transactions.length;
   });
-
-  showLoading('통장 거래 분석 중...');
-  await new Promise(r => setTimeout(r, 50));
-
-  // Parse bank transactions
-  bankAccounts = {};
-  for (const bf of bankFiles) {
-    const sheet = bankSheets[bf.id];
-    const bm = bankMappings[bf.id] || {};
-    const ds = bankDataStarts[bf.id] || 1;
-    if (bm.date === undefined) continue;
-
-    const transactions = [];
-    for (let i = ds; i < sheet.length; i++) {
-      const row = sheet[i];
-      if (!row) continue;
-      const dateStr = normalizeDate(row[bm.date]);
-      if (!dateStr) continue;
-      const deposit = Math.abs(parseNum(row[bm.deposit]));
-      const withdrawal = Math.abs(parseNum(row[bm.withdrawal]));
-      if (deposit === 0 && withdrawal === 0) continue;
-
-      transactions.push({
-        rowIdx: i,
-        date: dateStr,
-        rawDate: String(row[bm.date] || ''),
-        desc: bm.desc !== undefined ? String(row[bm.desc] || '').trim() : '',
-        counterparty: bm.counterparty !== undefined ? String(row[bm.counterparty] || '').trim() : '',
-        deposit,
-        withdrawal,
-        balance: bm.balance !== undefined ? parseNum(row[bm.balance]) : 0,
-        matched: false,
-        matchType: null,
-        matchedSlipKey: null,
-        counterpartAcct: '',
-        counterpartDesc: '',
-        originalRow: row,
-      });
-    }
-
-    bankAccounts[bf.id] = {
-      id: bf.id,
-      name: bf.name,
-      transactions,
-      matchedCount: 0,
-      unmatchedCount: transactions.length,
-    };
-  }
-
-  showLoading('매칭 수행 중...');
-  await new Promise(r => setTimeout(r, 50));
 
   // Perform matching
   if (hasBotongyegeum) {
@@ -1151,13 +1500,6 @@ async function runMatching() {
   } else {
     matchWithoutBotongyegeum(slipMap);
   }
-
-  hideLoading();
-  goToScreen(3);
-  renderDashboard();
-  renderDetailTab();
-  renderManualMatchTab();
-  renderExportTab();
 }
 
 function matchWithBotongyegeum(slipMap) {
@@ -1339,7 +1681,7 @@ function matchWithoutBotongyegeum(slipMap) {
 }
 
 // ============================================================
-// SCREEN 3: DASHBOARD
+// SCREEN 5: DASHBOARD
 // ============================================================
 function renderDashboard() {
   const allBanks = Object.values(bankAccounts);
@@ -1373,7 +1715,7 @@ function renderDashboard() {
 }
 
 // ============================================================
-// SCREEN 3: DETAIL TAB
+// SCREEN 5: DETAIL TAB
 // ============================================================
 function renderDetailTab() {
   const sel = document.getElementById('detail-bank-select');
@@ -1426,7 +1768,7 @@ function renderDetailTable() {
 }
 
 // ============================================================
-// SCREEN 3: MANUAL MATCH TAB
+// SCREEN 5: MANUAL MATCH TAB
 // ============================================================
 function renderManualMatchTab() {
   const sel = document.getElementById('manual-bank-select');
@@ -1560,7 +1902,7 @@ function performManualMatch() {
 }
 
 // ============================================================
-// SCREEN 3: EXPORT TAB
+// SCREEN 5: EXPORT TAB
 // ============================================================
 function renderExportTab() {
   const preview = document.getElementById('export-preview');
@@ -1731,7 +2073,9 @@ async function exportAllSeparate() {
 // ============================================================
 // INIT
 // ============================================================
-setupUpload();
+setupJournalUpload();
+setupBankUpload();
+setupNavigation();
 </script>
 </body>
 </html>
