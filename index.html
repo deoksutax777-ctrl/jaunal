@@ -1759,7 +1759,7 @@ function renderDetailTable() {
   const wrap = document.getElementById('detail-table-wrap');
   let html = `<table class="data-table"><thead><tr>
     <th>거래일</th><th>적요</th><th class="right">입금</th><th class="right">출금</th><th class="right">잔액</th>
-    <th>상대계정</th><th>거래처코드</th><th>거래처명</th><th>적요2</th><th>매칭</th>
+    <th>거래처코드_거래처명_계정과목</th><th>적요2</th><th>매칭</th>
   </tr></thead><tbody>`;
 
   txns.forEach(txn => {
@@ -1767,15 +1767,14 @@ function renderDetailTable() {
     const badge = txn.matched
       ? `<span class="match-badge ${txn.matchType}">${txn.matchType === 'exact' ? '정확' : txn.matchType === 'fuzzy' ? '근사' : '수동'}</span>`
       : '<span class="match-badge none">미매칭</span>';
+    const combined = txn.matched ? [txn.counterpartVendorCode, txn.counterpartVendor, txn.counterpartAcct].filter(Boolean).join('_') || '-' : '-';
     html += `<tr class="${cls}">
       <td>${txn.date}</td>
       <td title="${txn.desc}">${txn.desc.substring(0,25)}${txn.desc.length>25?'...':''}</td>
       <td class="right">${txn.deposit > 0 ? fmt(txn.deposit) : ''}</td>
       <td class="right">${txn.withdrawal > 0 ? fmt(txn.withdrawal) : ''}</td>
       <td class="right">${fmt(txn.balance)}</td>
-      <td style="font-weight:500;color:${txn.matched?'var(--green)':'var(--red)'}">${txn.counterpartAcct || '-'}</td>
-      <td style="font-size:11px;color:var(--text2)">${txn.counterpartVendorCode || '-'}</td>
-      <td style="font-weight:500;color:${txn.matched?'var(--green)':'var(--text3)'}">${txn.counterpartVendor || '-'}</td>
+      <td style="font-weight:500;color:${txn.matched?'var(--green)':'var(--red)'}">${combined}</td>
       <td style="font-size:11px;color:var(--text2)">${txn.counterpartDesc || '-'}</td>
       <td class="center">${badge}</td>
     </tr>`;
@@ -1968,15 +1967,15 @@ async function createBankWorkbook(ba, wb) {
   const titleRow = ws.addRow([shortName + ' 통장정리 결과']);
   titleRow.font = titleFont;
   titleRow.height = 30;
-  ws.mergeCells(1, 1, 1, 11);
+  ws.mergeCells(1, 1, 1, 9);
 
   // Subtitle
   const subRow = ws.addRow([`매칭: ${ba.matchedCount}/${ba.transactions.length}건 (${pct}%) | 생성일: ${new Date().toLocaleDateString('ko-KR')}`]);
   subRow.font = { size:10, color:{argb:'FF666666'}, name:'맑은 고딕' };
-  ws.mergeCells(2, 1, 2, 11);
+  ws.mergeCells(2, 1, 2, 9);
 
   // Header
-  const headers = ['거래일', '적요', '입금', '출금', '잔액', '상대계정', '거래처코드', '거래처명', '적요2(분개장)', '매칭상태'];
+  const headers = ['거래일', '적요', '입금', '출금', '잔액', '거래처코드_거래처명_계정과목', '적요2(분개장)', '매칭상태'];
   const hRow = ws.addRow(headers);
   hRow.eachCell((cell, col) => {
     cell.fill = headerFill;
@@ -1989,15 +1988,14 @@ async function createBankWorkbook(ba, wb) {
   // Data
   ba.transactions.forEach((txn, idx) => {
     const statusText = txn.matched ? (txn.matchType === 'exact' ? '정상매칭' : txn.matchType === 'fuzzy' ? '일자근사매칭' : '수동매칭') : '미매칭';
+    const combined = txn.matched ? [txn.counterpartVendorCode, txn.counterpartVendor, txn.counterpartAcct].filter(Boolean).join('_') : '';
     const row = ws.addRow([
       txn.date,
       txn.desc,
       txn.deposit > 0 ? txn.deposit : null,
       txn.withdrawal > 0 ? txn.withdrawal : null,
       txn.balance || null,
-      txn.counterpartAcct || '',
-      txn.counterpartVendorCode || '',
-      txn.counterpartVendor || '',
+      combined,
       txn.counterpartDesc || '',
       statusText,
     ]);
@@ -2011,8 +2009,7 @@ async function createBankWorkbook(ba, wb) {
       if (col === 3 || col === 4 || col === 5) cell.numFmt = '#,##0';
       if (col === 6 && txn.matched) cell.font = greenFont;
       if (col === 6 && !txn.matched) cell.font = { ...dataFont, color:{argb:'FFDC2626'} };
-      if (col === 8 && txn.matched) cell.font = greenFont;
-      if (col === 10) {
+      if (col === 8) {
         if (txn.matched) cell.font = txn.matchType === 'exact' ? greenFont : amberFont;
         else cell.font = redFont;
       }
@@ -2022,7 +2019,7 @@ async function createBankWorkbook(ba, wb) {
   // Column widths
   ws.columns = [
     { width:12 }, { width:30 }, { width:15 }, { width:15 }, { width:18 },
-    { width:20 }, { width:14 }, { width:20 }, { width:25 }, { width:14 },
+    { width:35 }, { width:25 }, { width:14 },
   ];
 
   return ws;
