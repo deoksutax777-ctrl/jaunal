@@ -1,0 +1,1737 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>통장정리 자동화</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.4.0/exceljs.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+KR:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+:root,[data-theme="light"]{--bg:#f8f9fc;--surface:#ffffff;--surface2:#f0f2f7;--surface3:#e4e7ef;--border:#d5d9e4;--text:#1e293b;--text2:#475569;--text3:#94a3b8;--accent:#3b6cf5;--accent-dim:rgba(59,108,245,0.08);--green:#16a34a;--green-bg:rgba(22,163,74,0.08);--red:#dc2626;--red-bg:rgba(220,38,38,0.08);--amber:#d97706;--amber-bg:rgba(217,119,6,0.08);--overlay-bg:rgba(248,249,252,0.92);--drop-overlay:rgba(59,108,245,0.06);--shadow:0 1px 3px rgba(0,0,0,0.04);--shadow-lg:0 8px 24px rgba(0,0,0,0.12);--btn-grad-from:#3b6cf5;--btn-grad-to:#2554d4;--btn-shadow:rgba(59,108,245,0.2);--btn-shadow-hover:rgba(59,108,245,0.3);--glow:rgba(59,108,245,0.06)}
+[data-theme="dark"]{--bg:#0c0e14;--surface:#151822;--surface2:#1e2230;--surface3:#282d3e;--border:#2e3348;--text:#e2e5f0;--text2:#8e93ad;--text3:#5c6180;--accent:#5b8aff;--accent-dim:rgba(91,138,255,0.12);--green:#2dd4a0;--green-bg:rgba(45,212,160,0.1);--red:#f06b6b;--red-bg:rgba(240,107,107,0.1);--amber:#f0b95b;--amber-bg:rgba(240,185,91,0.1);--overlay-bg:rgba(12,14,20,0.92);--drop-overlay:rgba(91,138,255,0.06);--shadow:0 1px 3px rgba(0,0,0,0.2);--shadow-lg:0 8px 24px rgba(0,0,0,0.4);--btn-grad-from:#5b8aff;--btn-grad-to:#3d6cff;--btn-shadow:rgba(91,138,255,0.2);--btn-shadow-hover:rgba(91,138,255,0.3);--glow:rgba(91,138,255,0.06)}
+[data-theme="blue"]{--bg:#edf4fc;--surface:#f5f9ff;--surface2:#dfeaf8;--surface3:#c8daf0;--border:#b0c8e8;--text:#1a3050;--text2:#3e6090;--text3:#7a9dc0;--accent:#2b7fd9;--accent-dim:rgba(43,127,217,0.1);--green:#0d9668;--green-bg:rgba(13,150,104,0.08);--red:#d93636;--red-bg:rgba(217,54,54,0.08);--amber:#c88b10;--amber-bg:rgba(200,139,16,0.08);--overlay-bg:rgba(237,244,252,0.92);--drop-overlay:rgba(43,127,217,0.06);--shadow:0 1px 4px rgba(30,80,140,0.06);--shadow-lg:0 8px 24px rgba(30,80,140,0.12);--btn-grad-from:#2b7fd9;--btn-grad-to:#1a5faa;--btn-shadow:rgba(43,127,217,0.2);--btn-shadow-hover:rgba(43,127,217,0.3);--glow:rgba(43,127,217,0.06)}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:'Noto Sans KR',sans-serif;background:var(--bg);color:var(--text);line-height:1.6;min-height:100vh;overflow-x:hidden;transition:background 0.3s,color 0.3s}
+.mono{font-family:'JetBrains Mono',monospace}
+.hidden{display:none!important}
+
+/* Steps */
+.steps-bar{display:flex;justify-content:center;gap:0;padding:24px 32px 0;background:var(--bg)}
+.step-item{display:flex;align-items:center;gap:8px;padding:8px 20px;font-size:13px;color:var(--text3);position:relative}
+.step-item .step-num{width:26px;height:26px;border-radius:50%;background:var(--surface3);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;transition:all 0.3s}
+.step-item.active .step-num{background:var(--accent);color:#fff}
+.step-item.done .step-num{background:var(--green);color:#fff}
+.step-item.active{color:var(--text)}
+.step-item.done{color:var(--green)}
+.step-connector{width:48px;height:2px;background:var(--surface3);margin:0 4px;align-self:center}
+.step-connector.done{background:var(--green)}
+
+/* Screens */
+.screen{display:none;min-height:calc(100vh - 60px)}.screen.active{display:flex;flex-direction:column}
+#screen-upload{align-items:center;justify-content:center;padding:40px 20px;position:relative;overflow:hidden}
+#screen-upload::before{content:'';position:absolute;top:-200px;left:-200px;width:600px;height:600px;background:radial-gradient(circle,var(--glow) 0%,transparent 70%);pointer-events:none}
+.upload-title{font-size:28px;font-weight:700;letter-spacing:-0.5px;margin-bottom:4px;background:linear-gradient(135deg,var(--text) 0%,var(--accent) 100%);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.upload-by{font-size:13px;color:var(--accent);letter-spacing:1.5px;font-weight:500;margin-bottom:16px;opacity:0.85}
+.upload-subtitle{font-size:13px;color:var(--text3);margin-bottom:40px;text-align:center;line-height:1.8}
+.upload-zones{display:flex;gap:24px;width:100%;max-width:800px;position:relative;z-index:1}
+.upload-zone{flex:1;border:2px dashed var(--border);border-radius:16px;padding:36px 24px;text-align:center;cursor:pointer;transition:all 0.3s;background:var(--surface);position:relative;overflow:hidden}
+.upload-zone:hover{border-color:var(--accent);background:var(--surface2)}
+.upload-zone.dragover{border-color:var(--accent);background:var(--accent-dim);transform:scale(1.02)}
+.upload-zone.loaded{border-color:var(--green);border-style:solid;background:var(--green-bg)}
+.upload-zone .zone-icon{font-size:36px;margin-bottom:12px;opacity:0.7}
+.upload-zone .zone-label{font-size:15px;font-weight:600;margin-bottom:4px}
+.upload-zone .zone-hint{font-size:12px;color:var(--text3)}
+.upload-zone .zone-file{font-size:13px;color:var(--green);font-weight:500;margin-top:6px}
+.upload-zone input[type=file]{display:none}
+.upload-actions{margin-top:32px;position:relative;z-index:1}
+.global-error{color:var(--red);font-size:13px;margin-top:12px;min-height:20px;text-align:center;position:relative;z-index:1}
+.global-footer{margin-top:48px;padding:16px;font-size:11px;color:var(--text3);text-align:center;letter-spacing:0.3px;opacity:0.6}
+
+/* Bank file tags */
+.bank-file-list{display:flex;flex-wrap:wrap;gap:6px;margin-top:10px;max-height:120px;overflow-y:auto}
+.bank-file-tag{display:inline-flex;align-items:center;gap:6px;padding:4px 10px;background:var(--green-bg);border:1px solid var(--green);border-radius:6px;font-size:11px;color:var(--green);font-weight:500}
+.bank-file-tag .remove-btn{cursor:pointer;font-size:14px;line-height:1;opacity:0.6;transition:opacity 0.2s}
+.bank-file-tag .remove-btn:hover{opacity:1}
+
+/* Mapping */
+#screen-mapping{padding:24px 32px}
+.mapping-section{margin-bottom:32px}
+.mapping-section-title{font-size:15px;font-weight:600;margin-bottom:4px}
+.mapping-section-sub{font-size:12px;color:var(--text3);margin-bottom:16px}
+.preview-wrap{overflow-x:auto;border:1px solid var(--border);border-radius:10px;margin-bottom:24px;max-height:260px;overflow-y:auto}
+.preview-table{border-collapse:collapse;font-size:12px;white-space:nowrap;width:100%}
+.preview-table th,.preview-table td{padding:6px 12px;border:1px solid var(--border);max-width:180px;overflow:hidden;text-overflow:ellipsis}
+.preview-table thead th{background:var(--surface2);color:var(--text2);font-weight:600;position:sticky;top:0;z-index:2}
+.preview-table tbody td{background:var(--surface);color:var(--text)}
+.preview-table .col-idx{background:var(--surface2);color:var(--text3);font-weight:600;text-align:center;min-width:36px}
+.mapping-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.mapping-card{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:16px}
+.mapping-card h4{font-size:13px;font-weight:600;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.mapping-card h4 .req{color:var(--red);font-size:10px}
+.mapping-card h4 .opt{color:var(--text3);font-size:10px}
+.map-row{display:flex;align-items:center;gap:10px;margin-bottom:10px}
+.map-row label{font-size:12px;color:var(--text2);width:100px;flex-shrink:0;text-align:right}
+.map-row select{flex:1;background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:7px 10px;border-radius:6px;font-size:12px;font-family:'Noto Sans KR',sans-serif}
+.map-row select:focus{outline:none;border-color:var(--accent)}
+.header-row-selector{display:flex;align-items:center;gap:12px;margin-bottom:16px;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:10px}
+.header-row-selector label{font-size:13px;font-weight:500}
+.header-row-selector select{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:6px 10px;border-radius:6px;font-size:13px;font-family:'Noto Sans KR',sans-serif}
+
+/* Pairing */
+.pairing-table{width:100%;border-collapse:collapse;font-size:13px}
+.pairing-table th{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.5px;padding:8px 12px;text-align:left;border-bottom:1px solid var(--border)}
+.pairing-table td{padding:10px 12px;border-bottom:1px solid var(--border)}
+.pairing-table tr:hover{background:var(--surface2)}
+.pairing-table select{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:5px 8px;border-radius:6px;font-size:12px;font-family:'Noto Sans KR',sans-serif}
+.pair-badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;font-weight:500}
+.pair-badge.matched{background:var(--green-bg);color:var(--green)}
+.pair-badge.unmatched{background:var(--amber-bg);color:var(--amber)}
+
+/* Analysis header & tabs */
+.header{background:var(--surface);border-bottom:1px solid var(--border);padding:14px 32px;display:flex;align-items:center;justify-content:space-between;position:sticky;top:0;z-index:100;backdrop-filter:blur(12px)}
+.header h1{font-size:17px;font-weight:600;letter-spacing:-0.3px}
+.header h1 em{font-style:normal;color:var(--accent)}
+.header-right{display:flex;gap:12px;align-items:center}
+.header-by{font-size:11px;font-weight:400;color:var(--accent);letter-spacing:1px;margin-left:8px;opacity:0.7}
+.badge{background:var(--surface3);padding:4px 12px;border-radius:6px;font-size:12px;color:var(--text2);font-weight:500}
+.tab-bar{display:flex;gap:2px;padding:8px 32px 0;background:var(--surface);border-bottom:1px solid var(--border)}
+.tab{padding:10px 24px;font-size:13px;font-weight:500;color:var(--text3);cursor:pointer;border-bottom:2px solid transparent;transition:all 0.2s;user-select:none}
+.tab:hover{color:var(--text2)}.tab.active{color:var(--accent);border-bottom-color:var(--accent)}
+.tab-content{display:none}.tab-content.active{display:block}
+.content{padding:24px 32px}
+.grid-2{display:grid;grid-template-columns:1fr 1fr;gap:20px}
+.grid-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px}
+.grid-4{display:grid;grid-template-columns:1fr 1fr 1fr 1fr;gap:16px}
+
+/* Cards */
+.card{background:var(--surface);border:1px solid var(--border);border-radius:12px;overflow:hidden;box-shadow:var(--shadow)}
+.card-header{padding:14px 20px 10px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--border)}
+.card-header h3{font-size:13px;font-weight:600}
+.card-body{padding:16px 20px}
+.summary-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:20px;box-shadow:var(--shadow)}
+.summary-card .label{font-size:11px;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:0.5px;font-weight:500}
+.summary-card .value{font-family:'JetBrains Mono',monospace;font-size:22px;font-weight:600}
+.summary-card .change{font-size:12px;margin-top:4px;font-weight:500}
+
+/* Data tables */
+.data-table{width:100%;border-collapse:collapse;font-size:12px}
+.data-table th{font-size:11px;font-weight:600;color:var(--text3);text-transform:uppercase;letter-spacing:0.3px;padding:8px 10px;text-align:left;border-bottom:2px solid var(--border);background:var(--surface2);position:sticky;top:0;z-index:2}
+.data-table th.right{text-align:right}
+.data-table td{padding:8px 10px;border-bottom:1px solid var(--border)}
+.data-table td.right{text-align:right;font-family:'JetBrains Mono',monospace}
+.data-table td.center{text-align:center}
+.data-table tr:hover{background:var(--surface2)}
+.data-table tr.matched{}.data-table tr.fuzzy td:first-child{border-left:3px solid var(--amber)}
+.data-table tr.unmatched{background:var(--red-bg)}
+.data-table tr.unmatched:hover{background:rgba(220,38,38,0.12)}
+.data-table tr.manual-matched td:first-child{border-left:3px solid var(--accent)}
+.match-badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:10px;font-weight:600;white-space:nowrap}
+.match-badge.exact{background:var(--green-bg);color:var(--green)}
+.match-badge.fuzzy{background:var(--amber-bg);color:var(--amber)}
+.match-badge.manual{background:var(--accent-dim);color:var(--accent)}
+.match-badge.none{background:var(--red-bg);color:var(--red)}
+
+/* Bar chart */
+.hbar-chart{display:flex;flex-direction:column;gap:12px}
+.hbar-row{display:flex;align-items:center;gap:12px}
+.hbar-label{font-size:12px;width:180px;flex-shrink:0;text-align:right;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.hbar-track{flex:1;height:24px;background:var(--surface3);border-radius:6px;overflow:hidden;position:relative}
+.hbar-fill{height:100%;border-radius:6px;transition:width 0.6s ease;display:flex;align-items:center;padding:0 8px}
+.hbar-fill.green{background:var(--green)}
+.hbar-fill.amber{background:var(--amber)}
+.hbar-fill.red{background:var(--red)}
+.hbar-pct{font-size:11px;font-weight:600;color:#fff;white-space:nowrap}
+.hbar-value{font-size:11px;color:var(--text3);width:60px;text-align:right;flex-shrink:0}
+
+/* Filter */
+.filter-bar{display:flex;gap:12px;margin-bottom:20px;align-items:center;flex-wrap:wrap}
+.filter-label{font-size:12px;color:var(--text3)}
+select{background:var(--surface2);border:1px solid var(--border);color:var(--text);padding:6px 12px;border-radius:6px;font-size:13px;font-family:'Noto Sans KR',sans-serif}
+select:focus{outline:none;border-color:var(--accent)}
+
+/* Manual match panel */
+.manual-match-panel{display:grid;grid-template-columns:1fr auto 1fr;gap:16px;align-items:start}
+.manual-list{max-height:60vh;overflow-y:auto;border:1px solid var(--border);border-radius:10px}
+.manual-item{padding:10px 14px;border-bottom:1px solid var(--border);cursor:pointer;transition:background 0.1s;font-size:12px}
+.manual-item:hover{background:var(--surface2)}
+.manual-item.selected{background:var(--accent-dim);border-left:3px solid var(--accent)}
+.manual-item:last-child{border-bottom:none}
+.manual-item .mi-date{font-weight:600;color:var(--text)}
+.manual-item .mi-desc{color:var(--text2);margin-top:2px}
+.manual-item .mi-amt{font-family:'JetBrains Mono',monospace;font-weight:600;margin-top:2px}
+.manual-match-actions{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:12px;padding:20px 0}
+
+/* Buttons */
+.btn{padding:10px 32px;border-radius:10px;border:none;font-size:14px;font-weight:600;cursor:pointer;font-family:'Noto Sans KR',sans-serif;transition:all 0.25s}
+.btn-primary{background:linear-gradient(135deg,var(--btn-grad-from) 0%,var(--btn-grad-to) 100%);color:#fff;box-shadow:0 4px 20px var(--btn-shadow)}
+.btn-primary:hover{transform:translateY(-2px);box-shadow:0 8px 28px var(--btn-shadow-hover)}
+.btn-primary:disabled{opacity:0.35;pointer-events:none;transform:none;box-shadow:none}
+.btn-secondary{background:var(--surface3);color:var(--text2);border:1px solid var(--border)}
+.btn-secondary:hover{background:var(--surface2);color:var(--text)}
+.btn-danger{background:none;color:var(--text3);border:1px solid var(--border);padding:6px 16px;border-radius:8px;font-size:12px;cursor:pointer;font-family:'Noto Sans KR',sans-serif;transition:all 0.2s}
+.btn-danger:hover{border-color:var(--red);color:var(--red)}
+.btn-export{padding:5px 14px;border-radius:6px;border:1px solid var(--border);background:var(--surface3);color:var(--text2);font-size:11px;cursor:pointer;font-family:'Noto Sans KR',sans-serif;transition:all 0.2s;white-space:nowrap}
+.btn-export:hover{border-color:var(--green);color:var(--green);background:var(--green-bg)}
+.btn-sm{padding:6px 16px;font-size:12px;border-radius:8px}
+
+.loading-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:var(--overlay-bg);z-index:9999;flex-direction:column;align-items:center;justify-content:center}
+.loading-overlay.show{display:flex}
+.spinner{width:48px;height:48px;border:3px solid var(--surface3);border-top-color:var(--accent);border-radius:50%;animation:spin 0.8s linear infinite}
+@keyframes spin{to{transform:rotate(360deg)}}
+.loading-text{margin-top:20px;font-size:14px;color:var(--text2)}
+
+/* Theme */
+.theme-switcher{position:fixed;top:16px;right:16px;z-index:200;display:flex;gap:4px;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:4px;box-shadow:var(--shadow)}
+.theme-btn{width:30px;height:30px;border-radius:7px;border:2px solid transparent;cursor:pointer;transition:all 0.2s;display:flex;align-items:center;justify-content:center;font-size:13px;background:none}
+.theme-btn:hover{border-color:var(--accent);transform:scale(1.1)}
+.theme-btn.active{border-color:var(--accent);background:var(--accent-dim)}
+.theme-btn[data-theme="light"]{background:linear-gradient(135deg,#f8f9fc,#e4e7ef)}
+.theme-btn[data-theme="dark"]{background:linear-gradient(135deg,#151822,#282d3e)}
+.theme-btn[data-theme="blue"]{background:linear-gradient(135deg,#edf4fc,#c8daf0)}
+
+/* Global drop overlay */
+.global-drop-overlay{display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:var(--drop-overlay);backdrop-filter:blur(2px);z-index:10000;align-items:center;justify-content:center;pointer-events:none}
+.global-drop-overlay.show{display:flex}
+.global-drop-overlay .drop-box{background:var(--surface);border:3px dashed var(--accent);border-radius:24px;padding:60px 80px;text-align:center;box-shadow:0 20px 60px var(--btn-shadow);pointer-events:none}
+.global-drop-overlay .drop-icon{font-size:56px;margin-bottom:16px;opacity:0.8}
+.global-drop-overlay .drop-title{font-size:20px;font-weight:700;color:var(--accent);margin-bottom:8px}
+.global-drop-overlay .drop-hint{font-size:13px;color:var(--text2)}
+
+.analysis-footer{text-align:center;padding:24px 0 32px;font-size:11px;color:var(--text3);letter-spacing:0.3px;opacity:0.5}
+
+/* Slip detail */
+.slip-detail{background:var(--surface2);border:1px solid var(--border);border-radius:8px;padding:12px;margin:8px 0;font-size:11px}
+.slip-detail table{width:100%;border-collapse:collapse}
+.slip-detail th,.slip-detail td{padding:4px 8px;border:1px solid var(--border);text-align:left}
+.slip-detail th{background:var(--surface3);font-weight:600}
+
+@keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}.fade-in{animation:fadeIn 0.3s ease forwards}
+
+@media(max-width:900px){
+  .grid-2{grid-template-columns:1fr}.grid-3{grid-template-columns:1fr 1fr}.grid-4{grid-template-columns:1fr 1fr}
+  .content{padding:16px}.header{padding:12px 16px}.tab-bar{padding:8px 16px 0;overflow-x:auto}
+  .upload-zones{flex-direction:column;max-width:400px}
+  .mapping-grid{grid-template-columns:1fr}
+  .manual-match-panel{grid-template-columns:1fr}
+  #screen-mapping{padding:16px}
+}
+</style>
+</head>
+<body>
+
+<!-- THEME -->
+<div class="theme-switcher">
+  <button class="theme-btn active" data-theme="light" title="Light">&#9728;&#65039;</button>
+  <button class="theme-btn" data-theme="dark" title="Dark">&#127769;</button>
+  <button class="theme-btn" data-theme="blue" title="Blue">&#127754;</button>
+</div>
+
+<!-- STEPS -->
+<div class="steps-bar" id="steps-bar">
+  <div class="step-item active" id="step-1"><span class="step-num">1</span> 파일 업로드</div>
+  <div class="step-connector" id="conn-12"></div>
+  <div class="step-item" id="step-2"><span class="step-num">2</span> 매핑 설정</div>
+  <div class="step-connector" id="conn-23"></div>
+  <div class="step-item" id="step-3"><span class="step-num">3</span> 매칭 분석</div>
+</div>
+
+<!-- SCREEN 1: UPLOAD -->
+<div class="screen active" id="screen-upload">
+  <div class="upload-title">통장정리 자동화</div>
+  <div class="upload-by">by Deoksu Tax Firm</div>
+  <div class="upload-subtitle">분개장 엑셀과 통장(거래내역서) 엑셀을 업로드하세요.<br>통장 파일은 여러 개를 동시에 업로드할 수 있습니다.<br>브라우저에서 처리되며 데이터는 외부로 전송되지 않습니다.</div>
+  <div class="upload-zones">
+    <div class="upload-zone" id="zone-journal" onclick="document.getElementById('file-journal').click()">
+      <div class="zone-icon">&#128215;</div>
+      <div class="zone-label">분개장</div>
+      <div class="zone-hint">xlsx/xls 파일 1개</div>
+      <div class="zone-file" id="file-journal-name"></div>
+      <input type="file" id="file-journal" accept=".xlsx,.xls">
+    </div>
+    <div class="upload-zone" id="zone-bank" onclick="document.getElementById('file-bank').click()">
+      <div class="zone-icon">&#127974;</div>
+      <div class="zone-label">통장 거래내역서</div>
+      <div class="zone-hint">xlsx/xls 파일 여러 개</div>
+      <div class="zone-file" id="file-bank-count"></div>
+      <div class="bank-file-list" id="bank-file-list"></div>
+      <input type="file" id="file-bank" accept=".xlsx,.xls" multiple>
+    </div>
+  </div>
+  <div class="upload-actions"><button class="btn btn-primary" id="btn-to-mapping" disabled>다음: 매핑 설정 &#8594;</button></div>
+  <div class="global-error" id="upload-error"></div>
+  <div class="global-footer">Made with &#44608;&#53468;&#54788; &#49464;&#47924;&#49324; &middot; Claude AI</div>
+</div>
+
+<!-- SCREEN 2: MAPPING -->
+<div class="screen" id="screen-mapping">
+  <!-- Journal mapping -->
+  <div class="mapping-section">
+    <div class="mapping-section-title">&#128215; 분개장 컬럼 매핑</div>
+    <div class="mapping-section-sub">미리보기를 확인한 후, 각 항목에 해당하는 컬럼을 지정해주세요.</div>
+    <div class="header-row-selector">
+      <label>데이터 시작 행:</label>
+      <select id="journal-start-row"></select>
+    </div>
+    <div class="preview-wrap" id="journal-preview"></div>
+    <div class="mapping-grid" id="journal-mapping-grid"></div>
+  </div>
+
+  <hr style="border:none;border-top:1px solid var(--border);margin:32px 0">
+
+  <!-- Bank pairing -->
+  <div class="mapping-section">
+    <div class="mapping-section-title">&#127974; 은행 계좌 페어링</div>
+    <div class="mapping-section-sub">분개장의 보통예금 거래처와 통장 파일을 연결합니다. 보통예금이 없는 분개장도 처리 가능합니다.</div>
+    <div id="pairing-info" style="font-size:13px;padding:12px 16px;background:var(--surface);border:1px solid var(--border);border-radius:8px;margin-bottom:16px"></div>
+    <div id="pairing-table-wrap"></div>
+  </div>
+
+  <div style="display:flex;gap:12px;justify-content:center;margin-top:24px;padding-bottom:40px">
+    <button class="btn btn-secondary" id="btn-back-upload">&#8592; 파일 선택</button>
+    <button class="btn btn-primary" id="btn-run-matching">매칭 시작 &#8594;</button>
+  </div>
+  <div class="global-error" id="mapping-error"></div>
+</div>
+
+<!-- SCREEN 3: ANALYSIS -->
+<div class="screen" id="screen-analysis">
+  <div class="header">
+    <h1><em>&#9670;</em> 통장정리 자동화 <span class="header-by">by Deoksu Tax Firm</span></h1>
+    <div class="header-right">
+      <span class="badge" id="badge-total"></span>
+      <span class="badge" id="badge-match"></span>
+      <button class="btn-danger" id="btn-reset">&#8617; 다시 시작</button>
+    </div>
+  </div>
+  <div class="tab-bar">
+    <div class="tab active" data-tab="dashboard">대시보드</div>
+    <div class="tab" data-tab="detail">통장별 상세</div>
+    <div class="tab" data-tab="unmatched">미매칭/수동매칭</div>
+    <div class="tab" data-tab="export">내보내기</div>
+  </div>
+
+  <!-- Tab: Dashboard -->
+  <div class="tab-content active" id="tab-dashboard">
+    <div class="content">
+      <div class="grid-4" id="summary-cards"></div>
+      <div style="height:20px"></div>
+      <div class="card">
+        <div class="card-header"><h3>통장별 매칭률</h3></div>
+        <div class="card-body" id="match-chart"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab: Detail -->
+  <div class="tab-content" id="tab-detail">
+    <div class="content">
+      <div class="filter-bar">
+        <span class="filter-label">통장 선택</span>
+        <select id="detail-bank-select"></select>
+        <span class="filter-label" style="margin-left:12px">필터</span>
+        <select id="detail-filter">
+          <option value="all">전체</option>
+          <option value="matched">매칭 완료</option>
+          <option value="unmatched">미매칭</option>
+        </select>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3 id="detail-title">거래 내역</h3><span id="detail-count" style="font-size:12px;color:var(--text3)"></span></div>
+        <div style="max-height:65vh;overflow-y:auto" id="detail-table-wrap"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab: Manual Match -->
+  <div class="tab-content" id="tab-unmatched">
+    <div class="content">
+      <div class="filter-bar">
+        <span class="filter-label">통장 선택</span>
+        <select id="manual-bank-select"></select>
+      </div>
+      <div class="manual-match-panel" id="manual-match-panel">
+        <div>
+          <h4 style="font-size:13px;font-weight:600;margin-bottom:8px">&#127974; 미매칭 통장 거래</h4>
+          <div class="manual-list" id="manual-bank-list"></div>
+        </div>
+        <div class="manual-match-actions">
+          <button class="btn btn-primary btn-sm" id="btn-manual-link" disabled>&#8596; 연결</button>
+          <button class="btn btn-secondary btn-sm" id="btn-manual-clear">선택 해제</button>
+        </div>
+        <div>
+          <h4 style="font-size:13px;font-weight:600;margin-bottom:8px">&#128215; 미매칭 분개장 항목</h4>
+          <div class="manual-list" id="manual-journal-list"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Tab: Export -->
+  <div class="tab-content" id="tab-export">
+    <div class="content">
+      <div class="grid-2" style="margin-bottom:24px">
+        <button class="btn btn-primary" onclick="exportAll()">&#11015; 전체 일괄 다운로드 (하나의 Excel)</button>
+        <button class="btn btn-secondary" onclick="exportAllSeparate()">&#11015; 통장별 개별 다운로드</button>
+      </div>
+      <div class="card">
+        <div class="card-header"><h3>내보내기 미리보기</h3></div>
+        <div class="card-body" id="export-preview"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="analysis-footer">Made with &#44608;&#53468;&#54788; &#49464;&#47924;&#49324; &middot; Claude AI</div>
+</div>
+
+<!-- GLOBAL DROP OVERLAY -->
+<div class="global-drop-overlay" id="global-drop-overlay">
+  <div class="drop-box">
+    <div class="drop-icon">&#128194;</div>
+    <div class="drop-title">엑셀 파일을 여기에 놓으세요</div>
+    <div class="drop-hint">분개장과 통장 파일을 자동으로 구분합니다</div>
+  </div>
+</div>
+
+<div class="loading-overlay" id="loading"><div class="spinner"></div><div class="loading-text" id="loading-text">처리 중...</div></div>
+
+<script>
+// ============================================================
+// STATE
+// ============================================================
+let journalFile = null;
+let bankFiles = []; // [{id, file, name}]
+let journalSheet = null; // 2D array
+let bankSheets = {}; // {id: 2D array}
+let journalMapping = {};
+let journalDataStart = 2;
+let bankMappings = {}; // {id: {date,deposit,withdrawal,balance,desc,counterparty}}
+let bankDataStarts = {}; // {id: number}
+let pairings = []; // [{journalVendor, bankFileId, journalEntryCount}]
+let journalEntries = []; // parsed journal rows
+let bankAccounts = {}; // {fileId: {id,name,transactions,matched,unmatched}}
+let matchResults = {}; // {fileId: [...]}
+let hasBotongyegeum = false;
+
+// Manual match state
+let selectedBankTxn = null;
+let selectedJournalSlip = null;
+
+let fileIdCounter = 0;
+function genId() { return 'bf' + (++fileIdCounter); }
+
+// ============================================================
+// THEME
+// ============================================================
+document.querySelectorAll('.theme-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.theme-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    document.documentElement.setAttribute('data-theme', btn.dataset.theme);
+    try { localStorage.setItem('bankReconTheme', btn.dataset.theme); } catch(e){}
+  });
+});
+try {
+  const saved = localStorage.getItem('bankReconTheme');
+  if (saved) {
+    document.documentElement.setAttribute('data-theme', saved);
+    document.querySelectorAll('.theme-btn').forEach(b => {
+      b.classList.toggle('active', b.dataset.theme === saved);
+    });
+  }
+} catch(e){}
+
+// ============================================================
+// NAVIGATION
+// ============================================================
+function goToScreen(n) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(['','screen-upload','screen-mapping','screen-analysis'][n]).classList.add('active');
+  for (let i = 1; i <= 3; i++) {
+    const el = document.getElementById('step-' + i);
+    el.classList.remove('active','done');
+    if (i < n) el.classList.add('done');
+    if (i === n) el.classList.add('active');
+  }
+  document.getElementById('conn-12').classList.toggle('done', n > 1);
+  document.getElementById('conn-23').classList.toggle('done', n > 2);
+  document.getElementById('steps-bar').style.display = n === 3 ? 'none' : 'flex';
+  window.scrollTo(0, 0);
+}
+
+// Tabs
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    const parent = tab.closest('.screen');
+    parent.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    parent.querySelectorAll('.tab-content').forEach(tc => tc.classList.remove('active'));
+    tab.classList.add('active');
+    document.getElementById('tab-' + tab.dataset.tab).classList.add('active');
+  });
+});
+
+// ============================================================
+// UTILITY
+// ============================================================
+function showLoading(text) { document.getElementById('loading-text').textContent = text || '처리 중...'; document.getElementById('loading').classList.add('show'); }
+function hideLoading() { document.getElementById('loading').classList.remove('show'); }
+function fmt(n) { return n == null ? '' : Number(n).toLocaleString('ko-KR'); }
+function parseNum(v) { if (v == null) return 0; if (typeof v === 'number') return v; const s = String(v).replace(/,/g,'').trim(); return Number(s) || 0; }
+function normalizeDate(v) {
+  if (!v) return '';
+  if (v instanceof Date) {
+    return v.getFullYear() + '-' + String(v.getMonth()+1).padStart(2,'0') + '-' + String(v.getDate()).padStart(2,'0');
+  }
+  const s = String(v).trim();
+  let m = s.match(/^(\d{4})[-\/.](\d{1,2})[-\/.](\d{1,2})/);
+  if (m) return m[1] + '-' + m[2].padStart(2,'0') + '-' + m[3].padStart(2,'0');
+  m = s.match(/^(\d{8})$/);
+  if (m) return s.substring(0,4) + '-' + s.substring(4,6) + '-' + s.substring(6,8);
+  return '';
+}
+function addDays(dateStr, days) {
+  const d = new Date(dateStr);
+  d.setDate(d.getDate() + days);
+  return d.getFullYear() + '-' + String(d.getMonth()+1).padStart(2,'0') + '-' + String(d.getDate()).padStart(2,'0');
+}
+async function readExcel(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const wb = XLSX.read(e.target.result, { type:'array', cellDates:true });
+        const ws = wb.Sheets[wb.SheetNames[0]];
+        resolve(XLSX.utils.sheet_to_json(ws, { header:1, defval:null }));
+      } catch(err) { reject(err); }
+    };
+    reader.onerror = reject;
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+// Read bank Excel with smart sheet selection (pick sheet with most transaction-like data)
+async function readBankExcel(file) {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      try {
+        const wb = XLSX.read(e.target.result, { type:'array', cellDates:true });
+        let bestSheet = null, bestScore = -1;
+        for (const name of wb.SheetNames) {
+          const ws = wb.Sheets[name];
+          const data = XLSX.utils.sheet_to_json(ws, { header:1, defval:null });
+          // Score: prefer sheets with many rows and bank-like headers
+          let score = data.length;
+          const allText = data.slice(0, 8).map(r => (r||[]).map(v => String(v||'')).join(' ')).join(' ').toLowerCase();
+          if (/거래일시|거래일/.test(allText)) score += 500;
+          if (/입금/.test(allText) && /출금/.test(allText)) score += 500;
+          if (/잔액/.test(allText)) score += 200;
+          // Penalize log/metadata sheets
+          if (/claude|log|turn|action taken/i.test(allText)) score -= 1000;
+          if (name.toLowerCase().includes('log')) score -= 1000;
+          if (score > bestScore) { bestScore = score; bestSheet = { name, data }; }
+        }
+        resolve(bestSheet ? bestSheet.data : []);
+      } catch(err) { reject(err); }
+    };
+    reader.onerror = reject;
+    reader.readAsArrayBuffer(file);
+  });
+}
+
+// ============================================================
+// SCREEN 1: UPLOAD
+// ============================================================
+function setupUpload() {
+  const journalZone = document.getElementById('zone-journal');
+  const journalInput = document.getElementById('file-journal');
+  const bankZone = document.getElementById('zone-bank');
+  const bankInput = document.getElementById('file-bank');
+
+  // Journal zone
+  ['dragenter','dragover'].forEach(evt => journalZone.addEventListener(evt, e => { e.preventDefault(); e.stopPropagation(); journalZone.classList.add('dragover'); }));
+  ['dragleave','drop'].forEach(evt => journalZone.addEventListener(evt, e => { e.preventDefault(); e.stopPropagation(); journalZone.classList.remove('dragover'); }));
+  journalZone.addEventListener('drop', e => { const f = e.dataTransfer.files[0]; if (f) loadJournalFile(f); });
+  journalInput.addEventListener('change', e => { const f = e.target.files[0]; if (f) loadJournalFile(f); });
+
+  // Bank zone
+  ['dragenter','dragover'].forEach(evt => bankZone.addEventListener(evt, e => { e.preventDefault(); e.stopPropagation(); bankZone.classList.add('dragover'); }));
+  ['dragleave','drop'].forEach(evt => bankZone.addEventListener(evt, e => { e.preventDefault(); e.stopPropagation(); bankZone.classList.remove('dragover'); }));
+  bankZone.addEventListener('drop', e => { addBankFiles(Array.from(e.dataTransfer.files)); });
+  bankInput.addEventListener('change', e => { addBankFiles(Array.from(e.target.files)); });
+
+  // Global drag & drop
+  let dragCounter = 0;
+  const overlay = document.getElementById('global-drop-overlay');
+  document.addEventListener('dragenter', e => { e.preventDefault(); if (!document.getElementById('screen-upload').classList.contains('active')) return; dragCounter++; if (dragCounter === 1) overlay.classList.add('show'); });
+  document.addEventListener('dragover', e => { e.preventDefault(); });
+  document.addEventListener('dragleave', e => { e.preventDefault(); dragCounter--; if (dragCounter <= 0) { dragCounter = 0; overlay.classList.remove('show'); } });
+  document.addEventListener('drop', e => {
+    e.preventDefault(); dragCounter = 0; overlay.classList.remove('show');
+    if (!document.getElementById('screen-upload').classList.contains('active')) return;
+    const files = Array.from(e.dataTransfer.files).filter(f => ['xlsx','xls'].includes(f.name.split('.').pop().toLowerCase()));
+    if (!files.length) { document.getElementById('upload-error').textContent = 'xlsx 또는 xls 파일만 지원합니다.'; return; }
+    // Auto-detect: if filename contains '분개장', it's journal; otherwise bank
+    files.forEach(f => {
+      if (f.name.includes('분개장') && !journalFile) loadJournalFile(f);
+      else addBankFiles([f]);
+    });
+  });
+
+  document.getElementById('btn-to-mapping').addEventListener('click', goToMappingScreen);
+  document.getElementById('btn-back-upload').addEventListener('click', () => goToScreen(1));
+  document.getElementById('btn-run-matching').addEventListener('click', runMatching);
+  document.getElementById('btn-reset').addEventListener('click', () => location.reload());
+}
+
+function loadJournalFile(file) {
+  const ext = file.name.split('.').pop().toLowerCase();
+  if (!['xlsx','xls'].includes(ext)) { document.getElementById('upload-error').textContent = 'xlsx/xls 파일만 지원합니다.'; return; }
+  journalFile = file;
+  document.getElementById('zone-journal').classList.add('loaded');
+  document.getElementById('file-journal-name').textContent = '\u2713 ' + file.name;
+  document.getElementById('upload-error').textContent = '';
+  updateUploadButton();
+}
+
+function addBankFiles(files) {
+  files.forEach(f => {
+    const ext = f.name.split('.').pop().toLowerCase();
+    if (!['xlsx','xls'].includes(ext)) return;
+    // Avoid duplicates
+    if (bankFiles.some(bf => bf.name === f.name && bf.file.size === f.size)) return;
+    bankFiles.push({ id: genId(), file: f, name: f.name });
+  });
+  renderBankFileList();
+  updateUploadButton();
+}
+
+function removeBankFile(id) {
+  bankFiles = bankFiles.filter(bf => bf.id !== id);
+  renderBankFileList();
+  updateUploadButton();
+}
+
+function renderBankFileList() {
+  const list = document.getElementById('bank-file-list');
+  const countEl = document.getElementById('file-bank-count');
+  const zone = document.getElementById('zone-bank');
+  if (bankFiles.length === 0) {
+    list.innerHTML = '';
+    countEl.textContent = '';
+    zone.classList.remove('loaded');
+    return;
+  }
+  zone.classList.add('loaded');
+  countEl.textContent = '\u2713 ' + bankFiles.length + '개 파일';
+  list.innerHTML = bankFiles.map(bf =>
+    `<span class="bank-file-tag">${bf.name}<span class="remove-btn" onclick="event.stopPropagation();removeBankFile('${bf.id}')">&times;</span></span>`
+  ).join('');
+}
+
+function updateUploadButton() {
+  document.getElementById('btn-to-mapping').disabled = !(journalFile && bankFiles.length > 0);
+}
+
+// ============================================================
+// SCREEN 2: MAPPING
+// ============================================================
+const JOURNAL_FIELDS = [
+  { id:'date', label:'일자', required:true },
+  { id:'slipNo', label:'전표번호', required:true },
+  { id:'side', label:'구분(차/대)', required:false },
+  { id:'acctCode', label:'계정코드', required:false },
+  { id:'acctName', label:'계정과목', required:true },
+  { id:'debit', label:'차변금액', required:true },
+  { id:'credit', label:'대변금액', required:true },
+  { id:'desc', label:'적요', required:false },
+  { id:'vendorCode', label:'거래처코드', required:false },
+  { id:'vendorName', label:'거래처명', required:false },
+];
+
+const JOURNAL_AUTO_RULES = {
+  date: { exact:['일자','날짜','전표일자','거래일자','date'], partial:['일자','날짜'] },
+  slipNo: { exact:['전표번호','번호','slip','no','전표no'], partial:['번호','전표'] },
+  side: { exact:['구분','차대구분','차변/대변','d/c'], partial:['구분'] },
+  acctCode: { exact:['코드','계정코드','계정과목코드','과목코드'], partial:['계정코드','과목코드'] },
+  acctName: { exact:['계정과목','계정과목명','계정명','과목명','계정'], partial:['계정과목','계정명','과목'] },
+  debit: { exact:['차변','차변금액','debit'], partial:['차변'] },
+  credit: { exact:['대변','대변금액','credit'], partial:['대변'] },
+  desc: { exact:['적요','비고','설명','memo'], partial:['적요'] },
+  vendorCode: { exact:['거래처코드'], partial:['거래처코드'] },
+  vendorName: { exact:['거래처명','거래처','업체명','상호'], partial:['거래처','업체'] },
+};
+
+async function goToMappingScreen() {
+  showLoading('파일 읽는 중...');
+  try {
+    journalSheet = await readExcel(journalFile);
+    for (const bf of bankFiles) {
+      showLoading(`통장 읽는 중... (${bf.name})`);
+      bankSheets[bf.id] = await readBankExcel(bf.file);
+    }
+  } catch(err) {
+    hideLoading();
+    document.getElementById('upload-error').textContent = '파일을 읽을 수 없습니다: ' + err.message;
+    return;
+  }
+  hideLoading();
+  goToScreen(2);
+  renderJournalMapping();
+  detectBankMappings();
+  buildPairing();
+}
+
+function autoMapJournal(sheet) {
+  let dataStart = 0;
+  for (let i = 0; i < Math.min(10, sheet.length); i++) {
+    const v = sheet[i] && sheet[i][0];
+    if (v && (v instanceof Date || /^\d{4}[-\/.]/.test(String(v)) || /^\d{8}$/.test(String(v)))) {
+      dataStart = i; break;
+    }
+  }
+  if (dataStart === 0) dataStart = 2;
+
+  const headerRows = sheet.slice(0, dataStart);
+  const maxCols = Math.max(...sheet.slice(0,10).map(r => r ? r.length : 0), 1);
+  const mapping = {};
+
+  // Priority: use the LAST header row (sub-header, most specific) first
+  // Then fall back to earlier rows for unmapped fields
+  // Also track used columns to avoid conflicts
+  const usedCols = new Set();
+
+  // Pass 1: Map from the last header row (most specific sub-headers like 차변, 대변, 적요)
+  if (headerRows.length >= 2) {
+    const lastRow = headerRows[headerRows.length - 1];
+    if (lastRow) {
+      for (let c = 0; c < Math.min(lastRow.length, maxCols); c++) {
+        const h = String(lastRow[c] || '').replace(/\s+/g,'').toLowerCase();
+        if (!h) continue;
+        for (const [fieldId, rules] of Object.entries(JOURNAL_AUTO_RULES)) {
+          if (mapping[fieldId] !== undefined) continue;
+          if (rules.exact && rules.exact.some(kw => h === kw.toLowerCase())) {
+            mapping[fieldId] = c; usedCols.add(c); break;
+          }
+        }
+      }
+      // Second pass for partial matches on last row
+      for (let c = 0; c < Math.min(lastRow.length, maxCols); c++) {
+        if (usedCols.has(c)) continue;
+        const h = String(lastRow[c] || '').replace(/\s+/g,'').toLowerCase();
+        if (!h) continue;
+        for (const [fieldId, rules] of Object.entries(JOURNAL_AUTO_RULES)) {
+          if (mapping[fieldId] !== undefined) continue;
+          if (rules.partial && rules.partial.some(kw => h.includes(kw.toLowerCase()))) {
+            mapping[fieldId] = c; usedCols.add(c); break;
+          }
+        }
+      }
+    }
+  }
+
+  // Pass 2: Fill remaining unmapped fields from all header rows (excluding already-used columns)
+  for (let c = 0; c < maxCols; c++) {
+    if (usedCols.has(c)) continue;
+    const headers = headerRows.map(r => String((r && r[c]) || '').replace(/\s+/g,'').toLowerCase());
+    for (const [fieldId, rules] of Object.entries(JOURNAL_AUTO_RULES)) {
+      if (mapping[fieldId] !== undefined) continue;
+      for (const h of headers) {
+        if (!h) continue;
+        if (rules.exact && rules.exact.some(kw => h === kw.toLowerCase())) { mapping[fieldId] = c; usedCols.add(c); break; }
+      }
+    }
+  }
+  for (let c = 0; c < maxCols; c++) {
+    if (usedCols.has(c)) continue;
+    const headers = headerRows.map(r => String((r && r[c]) || '').replace(/\s+/g,'').toLowerCase());
+    for (const [fieldId, rules] of Object.entries(JOURNAL_AUTO_RULES)) {
+      if (mapping[fieldId] !== undefined) continue;
+      for (const h of headers) {
+        if (!h) continue;
+        if (rules.partial && rules.partial.some(kw => h.includes(kw.toLowerCase()))) { mapping[fieldId] = c; usedCols.add(c); break; }
+      }
+    }
+  }
+
+  // Special: if '계정과목' header found at 2 cols (code + name), detect by checking data
+  if (mapping.acctCode === mapping.acctName && mapping.acctName !== undefined) {
+    const sample = sheet[dataStart] && sheet[dataStart][mapping.acctCode];
+    if (sample && /^\d{3,5}$/.test(String(sample).trim())) {
+      for (let c = mapping.acctCode + 1; c < maxCols; c++) {
+        const v = sheet[dataStart] && sheet[dataStart][c];
+        if (v && /[가-힣]/.test(String(v))) { mapping.acctName = c; break; }
+      }
+    }
+  }
+
+  return { mapping, dataStart };
+}
+
+function renderJournalMapping() {
+  const { mapping, dataStart } = autoMapJournal(journalSheet);
+  journalMapping = mapping;
+  journalDataStart = dataStart;
+
+  // Start row selector
+  const startSel = document.getElementById('journal-start-row');
+  startSel.innerHTML = '';
+  for (let i = 0; i < Math.min(10, journalSheet.length); i++) {
+    const opt = document.createElement('option');
+    opt.value = i;
+    const preview = (journalSheet[i] || []).slice(0, 3).map(v => String(v||'').substring(0,15)).join(' | ');
+    opt.textContent = `행 ${i+1}: ${preview}`;
+    startSel.appendChild(opt);
+  }
+  startSel.value = dataStart;
+  startSel.onchange = () => { journalDataStart = parseInt(startSel.value); renderJournalPreview(); };
+
+  renderJournalPreview();
+
+  // Mapping grid
+  const grid = document.getElementById('journal-mapping-grid');
+  const maxCols = Math.max(...journalSheet.slice(0,10).map(r => r ? r.length : 0), 1);
+
+  const reqFields = JOURNAL_FIELDS.filter(f => f.required);
+  const optFields = JOURNAL_FIELDS.filter(f => !f.required);
+
+  grid.innerHTML = `
+    <div class="mapping-card"><h4>필수 항목 <span class="req">*</span></h4>
+      ${reqFields.map(f => `<div class="map-row"><label>${f.label}</label><select id="jmap-${f.id}" onchange="updateJournalMapping()">
+        <option value="">-- 선택 --</option>
+        ${Array.from({length:maxCols}, (_,i) => {
+          const h0 = String((journalSheet[0]||[])[i] || '').trim();
+          const h1 = String((journalSheet[1]||[])[i] || '').trim();
+          const label = h1 ? (h0 && h0 !== h1 ? h0 + '/' + h1 : h1) : h0;
+          return `<option value="${i}" ${mapping[f.id]===i?'selected':''}>[${i}] ${label.substring(0,25)}</option>`;
+        }).join('')}
+      </select></div>`).join('')}
+    </div>
+    <div class="mapping-card"><h4>선택 항목 <span class="opt">선택</span></h4>
+      ${optFields.map(f => `<div class="map-row"><label>${f.label}</label><select id="jmap-${f.id}" onchange="updateJournalMapping()">
+        <option value="">-- 미사용 --</option>
+        ${Array.from({length:maxCols}, (_,i) => {
+          const h0 = String((journalSheet[0]||[])[i] || '').trim();
+          const h1 = String((journalSheet[1]||[])[i] || '').trim();
+          const label = h1 ? (h0 && h0 !== h1 ? h0 + '/' + h1 : h1) : h0;
+          return `<option value="${i}" ${mapping[f.id]===i?'selected':''}>[${i}] ${label.substring(0,25)}</option>`;
+        }).join('')}
+      </select></div>`).join('')}
+    </div>
+  `;
+}
+
+function updateJournalMapping() {
+  journalMapping = {};
+  JOURNAL_FIELDS.forEach(f => {
+    const sel = document.getElementById('jmap-' + f.id);
+    if (sel && sel.value !== '') journalMapping[f.id] = parseInt(sel.value);
+  });
+}
+
+function renderJournalPreview() {
+  const wrap = document.getElementById('journal-preview');
+  const maxCols = Math.max(...journalSheet.slice(0,10).map(r => r ? r.length : 0), 1);
+  const rows = journalSheet.slice(0, Math.min(8, journalSheet.length));
+  let html = '<table class="preview-table"><thead><tr><th class="col-idx">#</th>';
+  for (let c = 0; c < Math.min(maxCols, 12); c++) html += `<th>[${c}]</th>`;
+  html += '</tr></thead><tbody>';
+  rows.forEach((row, i) => {
+    const isData = i >= journalDataStart;
+    html += `<tr style="${isData?'':'opacity:0.5'}"><td class="col-idx">${i+1}</td>`;
+    for (let c = 0; c < Math.min(maxCols, 12); c++) {
+      const v = row && row[c];
+      html += `<td>${v instanceof Date ? normalizeDate(v) : (v != null ? String(v).substring(0,25) : '')}</td>`;
+    }
+    html += '</tr>';
+  });
+  html += '</tbody></table>';
+  wrap.innerHTML = html;
+}
+
+// Bank auto-detection
+const BANK_AUTO_RULES = {
+  date: { exact:['거래일시','거래일','일자','날짜'], partial:['거래일','일시','날짜'] },
+  deposit: { exact:['입금','입금금액','입금액'], partial:['입금'] },
+  withdrawal: { exact:['출금','출금금액','출금액'], partial:['출금'] },
+  balance: { exact:['잔액','거래후잔액','거래후 잔액'], partial:['잔액'] },
+  desc: { exact:['적요','기재내용','거래내용','내용','메모'], partial:['적요','내용','기재','거래내용'] },
+  counterparty: { exact:['의뢰인/수취인','상대계좌예금주명','예금주명'], partial:['수취인','예금주','의뢰인'] },
+};
+
+function detectBankMapping(sheet) {
+  // Find header row: look for a row where short cells contain 거래일시 AND (입금 or 출금)
+  let headerRow = -1;
+  const maxCols = Math.max(...sheet.slice(0,10).map(r => r ? r.length : 0), 1);
+
+  for (let r = 0; r < Math.min(8, sheet.length); r++) {
+    const row = sheet[r];
+    if (!row) continue;
+    // Only consider short cell values (< 20 chars) as header candidates
+    const shortVals = row.map(v => {
+      const s = String(v||'').replace(/\s+/g,'').toLowerCase();
+      return s.length <= 20 ? s : '';
+    });
+    const hasDate = shortVals.some(v => /^(거래일시|거래일|일자|날짜)$/.test(v) || /거래일시/.test(v));
+    const hasDeposit = shortVals.some(v => /^(입금|입금금액|입금액)$/.test(v));
+    const hasWithdraw = shortVals.some(v => /^(출금|출금금액|출금액)$/.test(v));
+    // Must have date AND at least one of deposit/withdrawal as separate short cells
+    if (hasDate && (hasDeposit || hasWithdraw)) { headerRow = r; break; }
+  }
+  if (headerRow < 0) return null;
+
+  const headers = (sheet[headerRow] || []).map(v => {
+    const s = String(v||'').replace(/\s+/g,'').toLowerCase();
+    return s.length <= 20 ? s : '';
+  });
+  const mapping = {};
+
+  for (let c = 0; c < headers.length; c++) {
+    const h = headers[c];
+    if (!h) continue;
+    for (const [fieldId, rules] of Object.entries(BANK_AUTO_RULES)) {
+      if (mapping[fieldId] !== undefined) continue;
+      if (rules.exact.some(kw => h === kw.toLowerCase().replace(/\s+/g,''))) { mapping[fieldId] = c; break; }
+      if (rules.partial.some(kw => h.includes(kw.toLowerCase()))) { mapping[fieldId] = c; break; }
+    }
+  }
+
+  return { mapping, dataStart: headerRow + 1 };
+}
+
+function detectBankMappings() {
+  bankFiles.forEach(bf => {
+    const sheet = bankSheets[bf.id];
+    if (!sheet) return;
+    const result = detectBankMapping(sheet);
+    if (result) {
+      bankMappings[bf.id] = result.mapping;
+      bankDataStarts[bf.id] = result.dataStart;
+    } else {
+      bankMappings[bf.id] = {};
+      bankDataStarts[bf.id] = 1;
+    }
+  });
+}
+
+// Pairing
+function extractDigits(str) { return (str.match(/\d+/g) || []); }
+const BANK_NAMES = ['하나','기업','부산','경남','국민','신한','우리','농협','대구','광주','전북','제주','산업','수협','씨티','SC','카카오','토스','케이'];
+
+function matchBankAccountToFile(vendorName, bankFileName) {
+  const vDigits = extractDigits(vendorName);
+  const fDigits = extractDigits(bankFileName);
+  // Check significant digit sequences match (length >= 3)
+  for (const vd of vDigits) {
+    if (vd.length < 3) continue;
+    for (const fd of fDigits) {
+      if (fd.length < 3) continue;
+      if (vd === fd || vd.endsWith(fd) || fd.endsWith(vd)) {
+        // Also check bank name matches
+        const vBank = BANK_NAMES.find(b => vendorName.includes(b));
+        const fBank = BANK_NAMES.find(b => bankFileName.includes(b));
+        if (vBank && fBank && vBank === fBank) return 100;
+        if (!vBank || !fBank) return 70;
+      }
+    }
+  }
+  // Bank name only match
+  const vBank = BANK_NAMES.find(b => vendorName.includes(b));
+  const fBank = BANK_NAMES.find(b => bankFileName.includes(b));
+  if (vBank && fBank && vBank === fBank) return 30;
+  return 0;
+}
+
+function buildPairing() {
+  // Parse journal to find 보통예금 vendor names
+  updateJournalMapping();
+  const m = journalMapping;
+  if (m.acctName === undefined) return;
+
+  const vendorCounts = {};
+  for (let i = journalDataStart; i < journalSheet.length; i++) {
+    const row = journalSheet[i];
+    if (!row) continue;
+    const acctName = String(row[m.acctName] || '').trim();
+    if (acctName === '보통예금' || (m.acctCode !== undefined && String(row[m.acctCode]||'').trim() === '0103')) {
+      const vendor = m.vendorName !== undefined ? String(row[m.vendorName] || '').trim() : '';
+      if (vendor) vendorCounts[vendor] = (vendorCounts[vendor] || 0) + 1;
+    }
+  }
+
+  hasBotongyegeum = Object.keys(vendorCounts).length > 0;
+
+  const infoEl = document.getElementById('pairing-info');
+
+  if (hasBotongyegeum) {
+    infoEl.innerHTML = `<span style="color:var(--green);font-weight:600">&#10003;</span> 분개장에서 보통예금 거래처 <b>${Object.keys(vendorCounts).length}개</b> 감지됨 (총 ${Object.values(vendorCounts).reduce((a,b)=>a+b,0)}건)`;
+  } else {
+    infoEl.innerHTML = `<span style="color:var(--amber);font-weight:600">&#9888;</span> 분개장에 보통예금 항목이 없습니다. <b>금액+일자+적요 기반 매칭</b>을 사용합니다.`;
+  }
+
+  // Auto-pair vendors to bank files
+  pairings = [];
+  const usedFiles = new Set();
+
+  if (hasBotongyegeum) {
+    for (const [vendor, count] of Object.entries(vendorCounts).sort((a,b) => b[1]-a[1])) {
+      let bestFile = null, bestScore = 0;
+      for (const bf of bankFiles) {
+        if (usedFiles.has(bf.id)) continue;
+        const score = matchBankAccountToFile(vendor, bf.name);
+        if (score > bestScore) { bestScore = score; bestFile = bf; }
+      }
+      pairings.push({
+        journalVendor: vendor,
+        bankFileId: bestFile && bestScore >= 50 ? bestFile.id : '',
+        journalEntryCount: count,
+        confidence: bestScore
+      });
+      if (bestFile && bestScore >= 50) usedFiles.add(bestFile.id);
+    }
+  } else {
+    // No 보통예금: just list bank files for direct matching
+    bankFiles.forEach(bf => {
+      pairings.push({ journalVendor: '(전체 분개장)', bankFileId: bf.id, journalEntryCount: 0, confidence: 100 });
+    });
+  }
+
+  renderPairingTable();
+}
+
+function renderPairingTable() {
+  const wrap = document.getElementById('pairing-table-wrap');
+  if (!hasBotongyegeum) {
+    // Simple list - no pairing needed
+    wrap.innerHTML = `<div style="font-size:13px;color:var(--text2);padding:12px">보통예금이 없으므로 모든 통장 파일에 대해 전체 분개장과 매칭합니다.</div>
+    <table class="pairing-table"><thead><tr><th>통장 파일</th><th>감지 상태</th></tr></thead><tbody>
+    ${bankFiles.map(bf => {
+      const bm = bankMappings[bf.id] || {};
+      const ok = bm.date !== undefined && (bm.deposit !== undefined || bm.withdrawal !== undefined);
+      return `<tr><td>${bf.name}</td><td>${ok ? '<span class="pair-badge matched">컬럼 감지 완료</span>' : '<span class="pair-badge unmatched">수동 확인 필요</span>'}</td></tr>`;
+    }).join('')}
+    </tbody></table>`;
+    return;
+  }
+
+  let html = `<table class="pairing-table"><thead><tr><th>분개장 거래처 (보통예금)</th><th>건수</th><th>매칭 통장 파일</th><th>상태</th></tr></thead><tbody>`;
+  pairings.forEach((p, idx) => {
+    const fileOpts = bankFiles.map(bf => `<option value="${bf.id}" ${p.bankFileId===bf.id?'selected':''}>${bf.name}</option>`).join('');
+    const badge = p.bankFileId ? '<span class="pair-badge matched">매칭</span>' : '<span class="pair-badge unmatched">미매칭</span>';
+    html += `<tr>
+      <td style="font-weight:500">${p.journalVendor}</td>
+      <td class="mono" style="text-align:right">${fmt(p.journalEntryCount)}</td>
+      <td><select onchange="pairings[${idx}].bankFileId=this.value;renderPairingTable()"><option value="">-- 선택 --</option>${fileOpts}</select></td>
+      <td>${badge}</td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+
+  // Show unmatched bank files
+  const pairedFileIds = new Set(pairings.map(p => p.bankFileId).filter(Boolean));
+  const unmatched = bankFiles.filter(bf => !pairedFileIds.has(bf.id));
+  if (unmatched.length > 0) {
+    html += `<div style="margin-top:16px;padding:12px 16px;background:var(--amber-bg);border:1px solid var(--amber);border-radius:8px;font-size:12px;color:var(--amber)">
+      <b>페어링 안 된 통장 파일:</b> ${unmatched.map(bf => bf.name).join(', ')}<br>
+      위 드롭다운에서 수동으로 연결하거나, 해당 통장은 매칭에서 제외됩니다.
+    </div>`;
+  }
+
+  wrap.innerHTML = html;
+}
+
+// ============================================================
+// MATCHING ENGINE
+// ============================================================
+async function runMatching() {
+  updateJournalMapping();
+  const m = journalMapping;
+
+  // Validate required mappings
+  const missing = [];
+  if (m.date === undefined) missing.push('일자');
+  if (m.acctName === undefined) missing.push('계정과목');
+  if (m.debit === undefined) missing.push('차변금액');
+  if (m.credit === undefined) missing.push('대변금액');
+  if (missing.length) {
+    document.getElementById('mapping-error').textContent = '필수 매핑 누락: ' + missing.join(', ');
+    return;
+  }
+
+  showLoading('분개장 분석 중...');
+  await new Promise(r => setTimeout(r, 50));
+
+  // Parse journal entries
+  journalEntries = [];
+  for (let i = journalDataStart; i < journalSheet.length; i++) {
+    const row = journalSheet[i];
+    if (!row) continue;
+    const dateStr = normalizeDate(row[m.date]);
+    if (!dateStr) continue;
+    const acctName = String(row[m.acctName] || '').trim();
+    if (!acctName) continue;
+
+    journalEntries.push({
+      rowIdx: i,
+      date: dateStr,
+      slipNo: m.slipNo !== undefined ? String(row[m.slipNo] || '').trim() : String(i),
+      side: m.side !== undefined ? String(row[m.side] || '').trim() : '',
+      acctCode: m.acctCode !== undefined ? String(row[m.acctCode] || '').trim() : '',
+      acctName,
+      debit: parseNum(row[m.debit]),
+      credit: parseNum(row[m.credit]),
+      desc: m.desc !== undefined ? String(row[m.desc] || '').trim() : '',
+      vendorCode: m.vendorCode !== undefined ? String(row[m.vendorCode] || '').trim() : '',
+      vendorName: m.vendorName !== undefined ? String(row[m.vendorName] || '').trim() : '',
+    });
+  }
+
+  // Group into slips
+  const slipMap = {};
+  journalEntries.forEach(e => {
+    const key = e.date + '_' + e.slipNo;
+    if (!slipMap[key]) slipMap[key] = [];
+    slipMap[key].push(e);
+  });
+
+  showLoading('통장 거래 분석 중...');
+  await new Promise(r => setTimeout(r, 50));
+
+  // Parse bank transactions
+  bankAccounts = {};
+  for (const bf of bankFiles) {
+    const sheet = bankSheets[bf.id];
+    const bm = bankMappings[bf.id] || {};
+    const ds = bankDataStarts[bf.id] || 1;
+    if (bm.date === undefined) continue;
+
+    const transactions = [];
+    for (let i = ds; i < sheet.length; i++) {
+      const row = sheet[i];
+      if (!row) continue;
+      const dateStr = normalizeDate(row[bm.date]);
+      if (!dateStr) continue;
+      const deposit = Math.abs(parseNum(row[bm.deposit]));
+      const withdrawal = Math.abs(parseNum(row[bm.withdrawal]));
+      if (deposit === 0 && withdrawal === 0) continue;
+
+      transactions.push({
+        rowIdx: i,
+        date: dateStr,
+        rawDate: String(row[bm.date] || ''),
+        desc: bm.desc !== undefined ? String(row[bm.desc] || '').trim() : '',
+        counterparty: bm.counterparty !== undefined ? String(row[bm.counterparty] || '').trim() : '',
+        deposit,
+        withdrawal,
+        balance: bm.balance !== undefined ? parseNum(row[bm.balance]) : 0,
+        matched: false,
+        matchType: null,
+        matchedSlipKey: null,
+        counterpartAcct: '',
+        counterpartDesc: '',
+        originalRow: row,
+      });
+    }
+
+    bankAccounts[bf.id] = {
+      id: bf.id,
+      name: bf.name,
+      transactions,
+      matchedCount: 0,
+      unmatchedCount: transactions.length,
+    };
+  }
+
+  showLoading('매칭 수행 중...');
+  await new Promise(r => setTimeout(r, 50));
+
+  // Perform matching
+  if (hasBotongyegeum) {
+    matchWithBotongyegeum(slipMap);
+  } else {
+    matchWithoutBotongyegeum(slipMap);
+  }
+
+  hideLoading();
+  goToScreen(3);
+  renderDashboard();
+  renderDetailTab();
+  renderManualMatchTab();
+  renderExportTab();
+}
+
+function matchWithBotongyegeum(slipMap) {
+  // Group 보통예금 slips by vendor
+  const vendorSlips = {}; // vendorName -> [{slipKey, slip, amount, isDeposit, counterparts}]
+
+  for (const [key, rows] of Object.entries(slipMap)) {
+    const bgRows = rows.filter(r => r.acctName === '보통예금' || r.acctCode === '0103');
+    if (bgRows.length === 0) continue;
+
+    for (const bgRow of bgRows) {
+      const vendor = bgRow.vendorName;
+      const amount = bgRow.debit > 0 ? bgRow.debit : bgRow.credit;
+      const isDeposit = bgRow.debit > 0; // 차변 = bank deposit
+      const counterparts = rows.filter(r => r !== bgRow);
+      const counterpartSummary = counterparts.map(r => r.acctName).filter((v,i,a) => a.indexOf(v)===i).join(', ') || '(없음)';
+      const counterpartDesc = bgRow.desc;
+
+      if (!vendorSlips[vendor]) vendorSlips[vendor] = [];
+      vendorSlips[vendor].push({ slipKey: key, amount, isDeposit, counterpartSummary, counterpartDesc, rows: counterparts });
+    }
+  }
+
+  // Match each bank account
+  const usedSlips = new Set();
+
+  for (const pairing of pairings) {
+    if (!pairing.bankFileId) continue;
+    const ba = bankAccounts[pairing.bankFileId];
+    if (!ba) continue;
+
+    const available = (vendorSlips[pairing.journalVendor] || []);
+
+    // Build index: date|amount|type -> [slip entries]
+    const index = {};
+    available.forEach(s => {
+      const type = s.isDeposit ? 'D' : 'W';
+      const key = s.rows[0]?.date || s.slipKey.split('_')[0];
+      const dateFromSlip = key;
+      const k = dateFromSlip + '|' + s.amount + '|' + type;
+      if (!index[k]) index[k] = [];
+      index[k].push(s);
+    });
+
+    // Pass 1: Exact match
+    for (const txn of ba.transactions) {
+      const amount = txn.deposit > 0 ? txn.deposit : txn.withdrawal;
+      const type = txn.deposit > 0 ? 'D' : 'W';
+      const k = txn.date + '|' + amount + '|' + type;
+      const candidates = (index[k] || []).filter(s => !usedSlips.has(s.slipKey));
+      if (candidates.length > 0) {
+        // Prefer desc match
+        let best = candidates[0];
+        if (candidates.length > 1) {
+          const descMatch = candidates.find(s => s.counterpartDesc && txn.desc && (txn.desc.includes(s.counterpartDesc) || s.counterpartDesc.includes(txn.desc)));
+          if (descMatch) best = descMatch;
+        }
+        txn.matched = true;
+        txn.matchType = 'exact';
+        txn.matchedSlipKey = best.slipKey;
+        txn.counterpartAcct = best.counterpartSummary;
+        txn.counterpartDesc = best.counterpartDesc;
+        usedSlips.add(best.slipKey);
+      }
+    }
+
+    // Pass 2: Fuzzy date (+/- 1 day)
+    for (const txn of ba.transactions) {
+      if (txn.matched) continue;
+      const amount = txn.deposit > 0 ? txn.deposit : txn.withdrawal;
+      const type = txn.deposit > 0 ? 'D' : 'W';
+      for (const offset of [-1, 1]) {
+        const fuzzyDate = addDays(txn.date, offset);
+        const k = fuzzyDate + '|' + amount + '|' + type;
+        const candidates = (index[k] || []).filter(s => !usedSlips.has(s.slipKey));
+        if (candidates.length > 0) {
+          txn.matched = true;
+          txn.matchType = 'fuzzy';
+          txn.matchedSlipKey = candidates[0].slipKey;
+          txn.counterpartAcct = candidates[0].counterpartSummary;
+          txn.counterpartDesc = candidates[0].counterpartDesc;
+          usedSlips.add(candidates[0].slipKey);
+          break;
+        }
+      }
+    }
+
+    // Update counts
+    ba.matchedCount = ba.transactions.filter(t => t.matched).length;
+    ba.unmatchedCount = ba.transactions.filter(t => !t.matched).length;
+  }
+}
+
+function matchWithoutBotongyegeum(slipMap) {
+  // Without 보통예금: use slip imbalance to detect bank transactions
+  // imbalance = sum(debits) - sum(credits)
+  //   > 0 → bank withdrawal (대변 보통예금 omitted)
+  //   < 0 → bank deposit (차변 보통예금 omitted)
+  //   = 0 → balanced, not bank-related
+
+  const slipIndex = {}; // date|amount|type -> [{slipKey, amount, type, counterpartSummary, counterpartDesc}]
+
+  for (const [key, rows] of Object.entries(slipMap)) {
+    const totalDebit = rows.reduce((s, r) => s + r.debit, 0);
+    const totalCredit = rows.reduce((s, r) => s + r.credit, 0);
+    const imbalance = Math.round((totalDebit - totalCredit) * 100) / 100; // round for float precision
+
+    if (Math.abs(imbalance) < 1) continue; // balanced = not bank-related
+
+    const amount = Math.abs(imbalance);
+    const type = imbalance > 0 ? 'W' : 'D'; // positive imbalance = withdrawal
+    const date = key.split('_')[0];
+
+    // Counterpart = all accounts in this slip (they ARE the counterpart since 보통예금 is missing)
+    const acctNames = rows.map(r => r.acctName).filter((v,i,a) => a.indexOf(v) === i).join(', ') || '(없음)';
+    // Use first row's desc as representative
+    const desc = rows[0]?.desc || '';
+    const vendorName = rows[0]?.vendorName || '';
+
+    const k = date + '|' + amount + '|' + type;
+    if (!slipIndex[k]) slipIndex[k] = [];
+    slipIndex[k].push({ slipKey: key, amount, type, counterpartSummary: acctNames, counterpartDesc: desc, vendorName });
+  }
+
+  const usedSlips = new Set();
+
+  for (const bf of bankFiles) {
+    const ba = bankAccounts[bf.id];
+    if (!ba) continue;
+
+    // Pass 1: Exact date + amount
+    for (const txn of ba.transactions) {
+      const amount = txn.deposit > 0 ? txn.deposit : txn.withdrawal;
+      const type = txn.deposit > 0 ? 'D' : 'W';
+      const k = txn.date + '|' + amount + '|' + type;
+      const candidates = (slipIndex[k] || []).filter(s => !usedSlips.has(s.slipKey));
+      if (candidates.length > 0) {
+        let best = candidates[0];
+        if (candidates.length > 1 && txn.desc) {
+          const descMatch = candidates.find(s =>
+            (s.vendorName && txn.desc.includes(s.vendorName)) ||
+            (s.counterpartDesc && txn.desc.includes(s.counterpartDesc))
+          );
+          if (descMatch) best = descMatch;
+        }
+        txn.matched = true;
+        txn.matchType = 'exact';
+        txn.matchedSlipKey = best.slipKey;
+        txn.counterpartAcct = best.counterpartSummary;
+        txn.counterpartDesc = best.counterpartDesc;
+        usedSlips.add(best.slipKey);
+      }
+    }
+
+    // Pass 2: Fuzzy date (±1 day)
+    for (const txn of ba.transactions) {
+      if (txn.matched) continue;
+      const amount = txn.deposit > 0 ? txn.deposit : txn.withdrawal;
+      const type = txn.deposit > 0 ? 'D' : 'W';
+      for (const offset of [-1, 1]) {
+        const fuzzyDate = addDays(txn.date, offset);
+        const k = fuzzyDate + '|' + amount + '|' + type;
+        const candidates = (slipIndex[k] || []).filter(s => !usedSlips.has(s.slipKey));
+        if (candidates.length > 0) {
+          txn.matched = true;
+          txn.matchType = 'fuzzy';
+          txn.matchedSlipKey = candidates[0].slipKey;
+          txn.counterpartAcct = candidates[0].counterpartSummary;
+          txn.counterpartDesc = candidates[0].counterpartDesc;
+          usedSlips.add(candidates[0].slipKey);
+          break;
+        }
+      }
+    }
+
+    ba.matchedCount = ba.transactions.filter(t => t.matched).length;
+    ba.unmatchedCount = ba.transactions.filter(t => !t.matched).length;
+  }
+}
+
+// ============================================================
+// SCREEN 3: DASHBOARD
+// ============================================================
+function renderDashboard() {
+  const allBanks = Object.values(bankAccounts);
+  const totalTxns = allBanks.reduce((s, ba) => s + ba.transactions.length, 0);
+  const totalMatched = allBanks.reduce((s, ba) => s + ba.matchedCount, 0);
+  const totalUnmatched = totalTxns - totalMatched;
+  const matchRate = totalTxns > 0 ? Math.round(totalMatched / totalTxns * 100) : 0;
+
+  document.getElementById('badge-total').textContent = '거래 ' + fmt(totalTxns) + '건';
+  document.getElementById('badge-match').textContent = '매칭 ' + matchRate + '%';
+
+  document.getElementById('summary-cards').innerHTML = `
+    <div class="summary-card"><div class="label">전체 통장 거래</div><div class="value">${fmt(totalTxns)}<span style="font-size:14px;color:var(--text3)">건</span></div><div class="change neutral">${allBanks.length}개 통장</div></div>
+    <div class="summary-card"><div class="label">매칭 완료</div><div class="value" style="color:var(--green)">${fmt(totalMatched)}<span style="font-size:14px">건</span></div><div class="change" style="color:var(--green)">${matchRate}%</div></div>
+    <div class="summary-card"><div class="label">미매칭</div><div class="value" style="color:var(--red)">${fmt(totalUnmatched)}<span style="font-size:14px">건</span></div><div class="change" style="color:var(--red)">${totalTxns > 0 ? (100 - matchRate) : 0}%</div></div>
+    <div class="summary-card"><div class="label">분개장 항목</div><div class="value">${fmt(journalEntries.length)}<span style="font-size:14px;color:var(--text3)">건</span></div><div class="change neutral">${hasBotongyegeum ? '보통예금 있음' : '보통예금 없음'}</div></div>
+  `;
+
+  // Match rate chart
+  const chart = document.getElementById('match-chart');
+  chart.innerHTML = '<div class="hbar-chart">' + allBanks.map(ba => {
+    const total = ba.transactions.length;
+    const pct = total > 0 ? Math.round(ba.matchedCount / total * 100) : 0;
+    const color = pct >= 90 ? 'green' : pct >= 60 ? 'amber' : 'red';
+    return `<div class="hbar-row">
+      <div class="hbar-label">${ba.name.replace(/거래내역서\.xlsx?$/,'').trim()}</div>
+      <div class="hbar-track"><div class="hbar-fill ${color}" style="width:${Math.max(pct,2)}%"><span class="hbar-pct">${pct}%</span></div></div>
+      <div class="hbar-value">${ba.matchedCount}/${total}</div>
+    </div>`;
+  }).join('') + '</div>';
+}
+
+// ============================================================
+// SCREEN 3: DETAIL TAB
+// ============================================================
+function renderDetailTab() {
+  const sel = document.getElementById('detail-bank-select');
+  sel.innerHTML = Object.values(bankAccounts).map(ba =>
+    `<option value="${ba.id}">${ba.name.replace(/거래내역서\.xlsx?$/,'').trim()} (${ba.transactions.length}건)</option>`
+  ).join('');
+  sel.onchange = () => renderDetailTable();
+  document.getElementById('detail-filter').onchange = () => renderDetailTable();
+  renderDetailTable();
+}
+
+function renderDetailTable() {
+  const bankId = document.getElementById('detail-bank-select').value;
+  const filter = document.getElementById('detail-filter').value;
+  const ba = bankAccounts[bankId];
+  if (!ba) return;
+
+  let txns = ba.transactions;
+  if (filter === 'matched') txns = txns.filter(t => t.matched);
+  if (filter === 'unmatched') txns = txns.filter(t => !t.matched);
+
+  document.getElementById('detail-title').textContent = ba.name.replace(/거래내역서\.xlsx?$/,'').trim();
+  document.getElementById('detail-count').textContent = `${txns.length}건 표시 (매칭 ${ba.matchedCount} / 미매칭 ${ba.unmatchedCount})`;
+
+  const wrap = document.getElementById('detail-table-wrap');
+  let html = `<table class="data-table"><thead><tr>
+    <th>거래일</th><th>적요</th><th class="right">입금</th><th class="right">출금</th><th class="right">잔액</th>
+    <th>상대계정</th><th>적요2</th><th>매칭</th>
+  </tr></thead><tbody>`;
+
+  txns.forEach(txn => {
+    const cls = txn.matched ? (txn.matchType === 'fuzzy' ? 'fuzzy' : txn.matchType === 'manual' ? 'manual-matched' : 'matched') : 'unmatched';
+    const badge = txn.matched
+      ? `<span class="match-badge ${txn.matchType}">${txn.matchType === 'exact' ? '정확' : txn.matchType === 'fuzzy' ? '근사' : '수동'}</span>`
+      : '<span class="match-badge none">미매칭</span>';
+    html += `<tr class="${cls}">
+      <td>${txn.date}</td>
+      <td title="${txn.desc}">${txn.desc.substring(0,25)}${txn.desc.length>25?'...':''}</td>
+      <td class="right">${txn.deposit > 0 ? fmt(txn.deposit) : ''}</td>
+      <td class="right">${txn.withdrawal > 0 ? fmt(txn.withdrawal) : ''}</td>
+      <td class="right">${fmt(txn.balance)}</td>
+      <td style="font-weight:500;color:${txn.matched?'var(--green)':'var(--red)'}">${txn.counterpartAcct || '-'}</td>
+      <td style="font-size:11px;color:var(--text2)">${txn.counterpartDesc || '-'}</td>
+      <td class="center">${badge}</td>
+    </tr>`;
+  });
+
+  html += '</tbody></table>';
+  wrap.innerHTML = html;
+}
+
+// ============================================================
+// SCREEN 3: MANUAL MATCH TAB
+// ============================================================
+function renderManualMatchTab() {
+  const sel = document.getElementById('manual-bank-select');
+  sel.innerHTML = Object.values(bankAccounts).map(ba =>
+    `<option value="${ba.id}">${ba.name.replace(/거래내역서\.xlsx?$/,'').trim()} (미매칭 ${ba.unmatchedCount}건)</option>`
+  ).join('');
+  sel.onchange = () => renderManualLists();
+
+  document.getElementById('btn-manual-link').onclick = performManualMatch;
+  document.getElementById('btn-manual-clear').onclick = () => {
+    selectedBankTxn = null;
+    selectedJournalSlip = null;
+    document.getElementById('btn-manual-link').disabled = true;
+    renderManualLists();
+  };
+
+  renderManualLists();
+}
+
+function renderManualLists() {
+  const bankId = document.getElementById('manual-bank-select').value;
+  const ba = bankAccounts[bankId];
+  if (!ba) return;
+
+  selectedBankTxn = null;
+  selectedJournalSlip = null;
+  document.getElementById('btn-manual-link').disabled = true;
+
+  // Unmatched bank transactions
+  const unmatchedTxns = ba.transactions.filter(t => !t.matched);
+  const bankList = document.getElementById('manual-bank-list');
+  bankList.innerHTML = unmatchedTxns.length === 0
+    ? '<div style="padding:20px;text-align:center;color:var(--text3);font-size:13px">모든 거래가 매칭되었습니다</div>'
+    : unmatchedTxns.map((txn, idx) => `
+    <div class="manual-item" data-idx="${txn.rowIdx}" onclick="selectBankTxn(this,${txn.rowIdx},'${bankId}')">
+      <div class="mi-date">${txn.date}</div>
+      <div class="mi-desc">${txn.desc || '(적요 없음)'}</div>
+      <div class="mi-amt" style="color:${txn.deposit>0?'var(--green)':'var(--red)'}">
+        ${txn.deposit > 0 ? '입금 ' + fmt(txn.deposit) : '출금 ' + fmt(txn.withdrawal)}
+      </div>
+    </div>
+  `).join('');
+
+  // Unmatched journal entries (보통예금 아닌 것들 or all)
+  // Find journal entries that haven't been matched yet
+  const matchedSlipKeys = new Set();
+  Object.values(bankAccounts).forEach(ba2 => {
+    ba2.transactions.forEach(t => { if (t.matched && t.matchedSlipKey) matchedSlipKeys.add(t.matchedSlipKey); });
+  });
+
+  const unmatchedJournal = journalEntries.filter(e => {
+    const key = e.date + '_' + e.slipNo;
+    return !matchedSlipKeys.has(key);
+  });
+
+  // Group by slipNo for display
+  const slipGroups = {};
+  unmatchedJournal.forEach(e => {
+    const key = e.date + '_' + e.slipNo;
+    if (!slipGroups[key]) slipGroups[key] = { date: e.date, slipNo: e.slipNo, entries: [] };
+    slipGroups[key].entries.push(e);
+  });
+
+  const journalList = document.getElementById('manual-journal-list');
+  const slipGroupArr = Object.values(slipGroups).slice(0, 200); // Limit display
+  journalList.innerHTML = slipGroupArr.length === 0
+    ? '<div style="padding:20px;text-align:center;color:var(--text3);font-size:13px">미매칭 분개장 항목 없음</div>'
+    : slipGroupArr.map(sg => {
+      const totalDr = sg.entries.reduce((s,e) => s + e.debit, 0);
+      const totalCr = sg.entries.reduce((s,e) => s + e.credit, 0);
+      const accts = sg.entries.map(e => e.acctName).filter((v,i,a)=>a.indexOf(v)===i).join(', ');
+      return `<div class="manual-item" data-key="${sg.date}_${sg.slipNo}" onclick="selectJournalSlip(this,'${sg.date}_${sg.slipNo}')">
+        <div class="mi-date">${sg.date} [${sg.slipNo}]</div>
+        <div class="mi-desc">${accts}</div>
+        <div class="mi-amt">${totalDr > 0 ? '차 ' + fmt(totalDr) : ''} ${totalCr > 0 ? '대 ' + fmt(totalCr) : ''}</div>
+      </div>`;
+    }).join('');
+}
+
+function selectBankTxn(el, rowIdx, bankId) {
+  document.querySelectorAll('#manual-bank-list .manual-item').forEach(i => i.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedBankTxn = { rowIdx, bankId };
+  document.getElementById('btn-manual-link').disabled = !(selectedBankTxn && selectedJournalSlip);
+}
+
+function selectJournalSlip(el, slipKey) {
+  document.querySelectorAll('#manual-journal-list .manual-item').forEach(i => i.classList.remove('selected'));
+  el.classList.add('selected');
+  selectedJournalSlip = slipKey;
+  document.getElementById('btn-manual-link').disabled = !(selectedBankTxn && selectedJournalSlip);
+}
+
+function performManualMatch() {
+  if (!selectedBankTxn || !selectedJournalSlip) return;
+  const ba = bankAccounts[selectedBankTxn.bankId];
+  if (!ba) return;
+
+  const txn = ba.transactions.find(t => t.rowIdx === selectedBankTxn.rowIdx);
+  if (!txn) return;
+
+  // Get journal slip info
+  const slipEntries = journalEntries.filter(e => (e.date + '_' + e.slipNo) === selectedJournalSlip);
+  if (slipEntries.length === 0) return;
+
+  // Determine counterpart: if 보통예금 mode, exclude 보통예금; otherwise use all
+  let counterparts;
+  if (hasBotongyegeum) {
+    counterparts = slipEntries.filter(e => e.acctName !== '보통예금' && e.acctCode !== '0103');
+  } else {
+    counterparts = slipEntries;
+  }
+  const acctSummary = counterparts.map(e => e.acctName).filter((v,i,a)=>a.indexOf(v)===i).join(', ') || slipEntries[0].acctName;
+
+  txn.matched = true;
+  txn.matchType = 'manual';
+  txn.matchedSlipKey = selectedJournalSlip;
+  txn.counterpartAcct = acctSummary;
+  txn.counterpartDesc = slipEntries[0].desc || '';
+
+  ba.matchedCount = ba.transactions.filter(t => t.matched).length;
+  ba.unmatchedCount = ba.transactions.filter(t => !t.matched).length;
+
+  selectedBankTxn = null;
+  selectedJournalSlip = null;
+
+  renderDashboard();
+  renderDetailTab();
+  renderManualMatchTab();
+  renderExportTab();
+}
+
+// ============================================================
+// SCREEN 3: EXPORT TAB
+// ============================================================
+function renderExportTab() {
+  const preview = document.getElementById('export-preview');
+  let html = '<table class="data-table"><thead><tr><th>통장</th><th class="right">전체</th><th class="right">매칭</th><th class="right">미매칭</th><th class="right">매칭률</th><th>개별 다운로드</th></tr></thead><tbody>';
+  Object.values(bankAccounts).forEach(ba => {
+    const pct = ba.transactions.length > 0 ? Math.round(ba.matchedCount / ba.transactions.length * 100) : 0;
+    html += `<tr>
+      <td style="font-weight:500">${ba.name.replace(/거래내역서\.xlsx?$/,'').trim()}</td>
+      <td class="right">${fmt(ba.transactions.length)}</td>
+      <td class="right" style="color:var(--green)">${fmt(ba.matchedCount)}</td>
+      <td class="right" style="color:var(--red)">${fmt(ba.unmatchedCount)}</td>
+      <td class="right" style="font-weight:600">${pct}%</td>
+      <td><button class="btn-export" onclick="exportSingle('${ba.id}')">&#11015; 다운로드</button></td>
+    </tr>`;
+  });
+  html += '</tbody></table>';
+  preview.innerHTML = html;
+}
+
+// ============================================================
+// EXCEL EXPORT
+// ============================================================
+async function createBankWorkbook(ba, wb) {
+  const shortName = ba.name.replace(/거래내역서\.xlsx?$/,'').replace(/^\d+\s*/,'').trim().substring(0, 31);
+  const ws = wb.addWorksheet(shortName || '통장');
+
+  // Styles
+  const headerFill = { type:'pattern', pattern:'solid', fgColor:{argb:'FF1F3864'} };
+  const headerFont = { bold:true, color:{argb:'FFFFFFFF'}, size:11, name:'맑은 고딕' };
+  const titleFont = { bold:true, size:14, name:'맑은 고딕', color:{argb:'FF1F3864'} };
+  const greenFont = { color:{argb:'FF16A34A'}, bold:true, size:11, name:'맑은 고딕' };
+  const redFont = { color:{argb:'FFDC2626'}, size:11, name:'맑은 고딕' };
+  const amberFont = { color:{argb:'FFD97706'}, bold:true, size:11, name:'맑은 고딕' };
+  const dataFont = { size:10, name:'맑은 고딕' };
+  const monoFont = { size:10, name:'Consolas' };
+  const thinBorder = { top:{style:'thin',color:{argb:'FFD5D9E4'}}, bottom:{style:'thin',color:{argb:'FFD5D9E4'}}, left:{style:'thin',color:{argb:'FFD5D9E4'}}, right:{style:'thin',color:{argb:'FFD5D9E4'}} };
+
+  const pct = ba.transactions.length > 0 ? Math.round(ba.matchedCount / ba.transactions.length * 100) : 0;
+
+  // Title row
+  const titleRow = ws.addRow([shortName + ' 통장정리 결과']);
+  titleRow.font = titleFont;
+  titleRow.height = 30;
+  ws.mergeCells(1, 1, 1, 9);
+
+  // Subtitle
+  const subRow = ws.addRow([`매칭: ${ba.matchedCount}/${ba.transactions.length}건 (${pct}%) | 생성일: ${new Date().toLocaleDateString('ko-KR')}`]);
+  subRow.font = { size:10, color:{argb:'FF666666'}, name:'맑은 고딕' };
+  ws.mergeCells(2, 1, 2, 9);
+
+  // Header
+  const headers = ['거래일', '적요', '입금', '출금', '잔액', '상대계정', '적요2(분개장)', '매칭상태'];
+  const hRow = ws.addRow(headers);
+  hRow.eachCell((cell, col) => {
+    cell.fill = headerFill;
+    cell.font = headerFont;
+    cell.alignment = { horizontal: col >= 3 && col <= 5 ? 'right' : 'left', vertical:'middle' };
+    cell.border = thinBorder;
+  });
+  hRow.height = 25;
+
+  // Data
+  ba.transactions.forEach((txn, idx) => {
+    const statusText = txn.matched ? (txn.matchType === 'exact' ? '정상매칭' : txn.matchType === 'fuzzy' ? '일자근사매칭' : '수동매칭') : '미매칭';
+    const row = ws.addRow([
+      txn.date,
+      txn.desc,
+      txn.deposit > 0 ? txn.deposit : null,
+      txn.withdrawal > 0 ? txn.withdrawal : null,
+      txn.balance || null,
+      txn.counterpartAcct || '',
+      txn.counterpartDesc || '',
+      statusText,
+    ]);
+
+    const bgColor = !txn.matched ? 'FFFFF0F0' : idx % 2 === 0 ? 'FFF8F9FC' : 'FFFFFFFF';
+    row.eachCell({ includeEmpty:true }, (cell, col) => {
+      cell.font = col >= 3 && col <= 5 ? monoFont : dataFont;
+      cell.alignment = { horizontal: col >= 3 && col <= 5 ? 'right' : 'left', vertical:'middle' };
+      cell.border = thinBorder;
+      cell.fill = { type:'pattern', pattern:'solid', fgColor:{argb:bgColor} };
+      if (col === 3 || col === 4 || col === 5) cell.numFmt = '#,##0';
+      if (col === 6 && txn.matched) cell.font = greenFont;
+      if (col === 6 && !txn.matched) cell.font = { ...dataFont, color:{argb:'FFDC2626'} };
+      if (col === 8) {
+        if (txn.matched) cell.font = txn.matchType === 'exact' ? greenFont : amberFont;
+        else cell.font = redFont;
+      }
+    });
+  });
+
+  // Column widths
+  ws.columns = [
+    { width:12 }, { width:30 }, { width:15 }, { width:15 }, { width:18 },
+    { width:20 }, { width:25 }, { width:14 },
+  ];
+
+  return ws;
+}
+
+async function exportSingle(bankId) {
+  const ba = bankAccounts[bankId];
+  if (!ba) return;
+  showLoading('Excel 파일 생성 중...');
+  try {
+    const wb = new ExcelJS.Workbook();
+    await createBankWorkbook(ba, wb);
+    const buffer = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = ba.name.replace(/\.(xlsx?|xls)$/i, '') + '_정리완료.xlsx';
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch(e) { alert('내보내기 오류: ' + e.message); }
+  hideLoading();
+}
+
+async function exportAll() {
+  showLoading('전체 Excel 파일 생성 중...');
+  try {
+    const wb = new ExcelJS.Workbook();
+
+    // Summary sheet
+    const ws = wb.addWorksheet('매칭 요약');
+    const titleFont = { bold:true, size:14, name:'맑은 고딕', color:{argb:'FF1F3864'} };
+    const headerFill = { type:'pattern', pattern:'solid', fgColor:{argb:'FF1F3864'} };
+    const headerFont = { bold:true, color:{argb:'FFFFFFFF'}, size:11, name:'맑은 고딕' };
+    const thinBorder = { top:{style:'thin',color:{argb:'FFD5D9E4'}}, bottom:{style:'thin',color:{argb:'FFD5D9E4'}}, left:{style:'thin',color:{argb:'FFD5D9E4'}}, right:{style:'thin',color:{argb:'FFD5D9E4'}} };
+
+    ws.addRow(['통장정리 매칭 요약']).font = titleFont;
+    ws.addRow([`생성일: ${new Date().toLocaleDateString('ko-KR')}`]).font = { size:10, color:{argb:'FF666666'}, name:'맑은 고딕' };
+    const hRow = ws.addRow(['통장명', '전체건수', '매칭건수', '미매칭건수', '매칭률']);
+    hRow.eachCell(cell => { cell.fill = headerFill; cell.font = headerFont; cell.border = thinBorder; });
+
+    for (const ba of Object.values(bankAccounts)) {
+      const pct = ba.transactions.length > 0 ? Math.round(ba.matchedCount / ba.transactions.length * 100) + '%' : '-';
+      const row = ws.addRow([ba.name.replace(/거래내역서\.xlsx?$/,'').trim(), ba.transactions.length, ba.matchedCount, ba.unmatchedCount, pct]);
+      row.eachCell(cell => { cell.border = thinBorder; cell.font = { size:10, name:'맑은 고딕' }; });
+    }
+    ws.columns = [{ width:35 }, { width:12 }, { width:12 }, { width:12 }, { width:10 }];
+
+    // Per-bank sheets
+    for (const ba of Object.values(bankAccounts)) {
+      await createBankWorkbook(ba, wb);
+    }
+
+    const buffer = await wb.xlsx.writeBuffer();
+    const blob = new Blob([buffer], { type:'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = '통장정리_전체_' + new Date().toISOString().slice(0,10) + '.xlsx';
+    a.click();
+    URL.revokeObjectURL(url);
+  } catch(e) { alert('내보내기 오류: ' + e.message); }
+  hideLoading();
+}
+
+async function exportAllSeparate() {
+  for (const ba of Object.values(bankAccounts)) {
+    await exportSingle(ba.id);
+    await new Promise(r => setTimeout(r, 300)); // Brief delay between downloads
+  }
+}
+
+// ============================================================
+// INIT
+// ============================================================
+setupUpload();
+</script>
+</body>
+</html>
